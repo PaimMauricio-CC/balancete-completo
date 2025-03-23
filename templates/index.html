@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparativo Balancete</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Comparativo Balancete</h1>
+        
+        <!-- Formulário para upload dos arquivos -->
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
+            <div class="file-input">
+                <label for="bethaFile">Arquivo Betha:</label>
+                <input type="file" id="bethaFile" name="bethaFile" required>
+            </div>
+            <div class="file-input">
+                <label for="tceFile">Arquivo TCE:</label>
+                <input type="file" id="tceFile" name="tceFile" required>
+            </div>
+            <div class="mode-selection">
+                <label for="mode">Modo de Comparação:</label>
+                <select id="mode" name="mode">
+                    <option value="analitico">Comparativo Balancete - Conta Corrente</option>
+                    <option value="sintetico">Comparativo Balancete Geral</option>
+                </select>
+            </div>
+            <button type="submit">Processar</button>
+        </form>
+
+        <!-- Área para exibir os resultados -->
+        <div id="output">
+            {% if comparacao_html %}
+                <h2>Resultado da Comparação</h2>
+                {{ comparacao_html | safe }}
+                <a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="btn">Baixar Comparação (CSV)</a>
+            {% endif %}
+
+            {% if diferencas_html %}
+                <h2>Diferenças Encontradas</h2>
+                {{ diferencas_html | safe }}
+                <a href="{{ url_for('download', filename=diferencas_file.split('/')[-1]) }}" class="btn">Baixar Diferenças (CSV)</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

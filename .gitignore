@@ -1,0 +1,9 @@
+# Ignorar arquivos CSV de upload
+uploads/*.csv
+
+# Ignorar arquivos gerados automaticamente
+data/*.csv
+
+# Ignorar ambiente virtual Python
+venv/
+__pycache__/
