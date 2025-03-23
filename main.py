@@ -1,5 +1,6 @@
 import pandas as pd
 import sys
+import logging
 import chardet
 from utils import normalizar_mascara, extrair_conta_corrente, limpar_saldo, corrigir_tipo, normalizar_conta_tce, converter_notacao_cientifica
 # Processamento Analítico
@@ -74,12 +75,8 @@ def process_analitico():
 
     # Normalizar máscaras no TCE
     df_tce['Máscara Normalizada'] = df_tce['Máscara'].apply(normalizar_mascara)
-    print("Normalizado conta corrente:")
-    print(df_tce.columns)
     # Normalizar contas do TCE para garantir 18 dígitos
     df_tce['Conta Corrente Normalizada'] = df_tce['Conta Corrente'].apply(normalizar_conta_tce)
-    print("Normalizado conta corrente:")
-    print(df_tce.columns)
 
     # Limpar e converter saldos no TCE
     df_tce['Saldo atual'] = df_tce['Saldo atual'].apply(limpar_saldo)
@@ -121,115 +118,181 @@ def process_analitico():
     # Exportar os resultados para arquivos CSV
     df_comparacao.to_csv('data/Comparacao_Betha_TCE.csv', index=False, encoding='utf-8')
     df_diferencas.to_csv('data/Diferencas_Betha_TCE.csv', index=False, encoding='utf-8')
+    #print("Colunas do DataFrame Betha Tratado:")
+    #print(df_betha_tratado.columns)
+
+    #print("Colunas do DataFrame TCE Tratado:")
+    #print(df_tce_tratado.columns)
+    #df_outer = pd.merge(
+    #        df_betha_tratado,
+    #        df_tce_tratado,
+    #        left_on="Máscara Normalizada",
+    #        right_on="Máscara Normalizada",
+    #        how="outer",
+    #        indicator=True,
+    #    )
+
+    # Filtrar máscaras exclusivas do Betha
+    #df_sem_correspondencia_betha = df_outer[df_outer["_merge"] == "left_only"][df_betha_tratado.columns]
+    #df_sem_correspondencia_betha.to_csv(
+    #    "data/Mascaras_Sem_Correspondencia_Betha_Analitico.csv", index=False, encoding="utf-8"
+    #)
+
+    # Filtrar máscaras exclusivas do TCE
+    #df_sem_correspondencia_tce = df_outer[df_outer["_merge"] == "right_only"][df_tce_tratado.columns]
+    #df_sem_correspondencia_tce.to_csv(
+    #    "data/Mascaras_Sem_Correspondencia_TCE_Analitico.csv", index=False, encoding="utf-8"
+    #)
+    # Realizar o merge
+    df_outer = pd.merge(
+        df_betha_tratado,
+        df_tce_tratado,
+        left_on="Máscara Normalizada",
+        right_on="Máscara Normalizada",
+        how="outer",
+        indicator=True,
+        suffixes=("_betha", "_tce")  # Adicionar sufixos explícitos
+    )
+
+    # Verificar o resultado do merge
+    print("Colunas do DataFrame Outer após o merge:")
+    print(df_outer.columns)
+
+    print("Primeiras linhas do DataFrame Outer:")
+    print(df_outer.head())
+
+    # Filtrar máscaras exclusivas do Betha
+    df_sem_correspondencia_betha = df_outer[df_outer["_merge"] == "left_only"][
+        ["Máscara Normalizada", "Conta Corrente_betha", "Saldo_atual_Betha"]
+    ]
+    df_sem_correspondencia_betha.to_csv(
+        "data/Mascaras_Sem_Correspondencia_Betha_Analitico.csv", index=False, encoding="utf-8"
+    )
+
+    # Filtrar máscaras exclusivas do TCE
+    df_sem_correspondencia_tce = df_outer[df_outer["_merge"] == "right_only"][
+        ["Máscara Normalizada", "Conta Corrente_tce", "Saldo_atual_TCE"]
+    ]
+    df_sem_correspondencia_tce.to_csv(
+        "data/Mascaras_Sem_Correspondencia_TCE_Analitico.csv", index=False, encoding="utf-8"
+)
+    logging.info("Máscaras sem correspondência identificadas e salvas com sucesso.")
+
+
 
     return df_comparacao, df_diferencas
 
-# Processamento Sintético (Em implementação)
+# Configurar logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def process_sintetico():
     logging.info("Iniciando processamento no modo Sintético...")
-    
-    # Carregar arquivos CSV
-    df_betha = pd.read_csv('uploads/betha.csv', sep=';', dtype={'descrição': str}, encoding='ISO-8859-1')
-    df_tce = pd.read_csv('uploads/tce.csv', sep=';', skiprows=5, dtype={'Nome Conta': str}, encoding='ISO-8859-1')
 
-    # Aplicar a função de conversão ao campo "Nome conta" para corrigir notação científica
-    df_tce['Nome Conta'] = df_tce['Nome Conta'].apply(converter_notacao_cientifica)
-
-    # ------ Processamento do TCE ------
     try:
-        # Renomear colunas do TCE para facilitar a comparação
-        df_tce.rename(columns={
-            'Código conta': 'Código Conta TCE',
-            'Nome Conta': 'Conta Corrente',
-            'Saldo final': 'Saldo atual'
-        }, inplace=True)
-        
-        # Remover duplicatas na coluna "Código Conta TCE", mantendo apenas a primeira ocorrência
-        df_tce.drop_duplicates(subset='Código Conta TCE', keep='first', inplace=True)
-        
-        # Limpar e converter saldos no TCE
-        df_tce['Saldo atual'] = df_tce['Saldo atual'].apply(limpar_saldo)
-        
-        # Selecionar colunas relevantes
-        colunas_tce = ['Código Conta TCE', 'Saldo atual']
-        df_tce_filtrado = df_tce[colunas_tce]
-        
-        # Salvar o DataFrame tratado do TCE para uso posterior
-        df_tce_filtrado.to_csv('data/TCE_Tratado_Sintetico.csv', index=False, encoding='utf-8')
-        logging.info("Arquivo TCE tratado com sucesso no modo Sintético.")
+        # Carregar arquivos CSV
+        df_betha = pd.read_csv('uploads/betha.csv', sep=';', dtype={'descrição': str}, encoding='utf-8')
+        df_tce = pd.read_csv('uploads/tce.csv', sep=';', skiprows=5, dtype={'Nome Conta': str}, encoding='ISO-8859-1')
+
+        # Aplicar a função de conversão ao campo "Nome conta" para corrigir notação científica
+        df_tce['Nome conta'] = df_tce['Nome conta'].apply(converter_notacao_cientifica)
+
+        # - Processamento do TCE -
+        try:
+            # Renomear colunas do TCE para facilitar a comparação
+            df_tce.rename(columns={
+                'Código conta': 'Código Conta TCE',
+                'Nome conta': 'Conta Corrente',
+                'Saldo final': 'Saldo atual'
+            }, inplace=True)
+
+            # Normalizar máscaras no TCE
+            df_tce['Máscara Normalizada'] = df_tce['Código Conta TCE'].apply(normalizar_mascara)
+
+            # Limpar e converter saldos no TCE
+            df_tce['Saldo atual'] = df_tce['Saldo atual'].apply(limpar_saldo)
+
+            # Selecionar colunas relevantes
+            colunas_tce = ['Código Conta TCE', 'Saldo atual']
+            df_tce_filtrado = df_tce[colunas_tce]
+
+            # Salvar o DataFrame tratado do TCE para uso posterior
+            df_tce_filtrado.to_csv('data/TCE_Tratado_Sintetico.csv', index=False, encoding='utf-8')
+            logging.info("Arquivo TCE tratado com sucesso no modo Sintético.")
+        except Exception as e:
+            logging.error(f"Erro ao processar o arquivo TCE: {e}")
+            return None
+
+        # - Processamento do Betha -
+        try:
+            # Normalizar máscaras no Betha
+            df_betha['Máscara Normalizada'] = df_betha['Máscara'].apply(normalizar_mascara)
+
+            # Limpar e converter saldos no Betha
+            df_betha['Saldo Atual'] = df_betha['Saldo atual'].apply(limpar_saldo)
+
+            # Selecionar colunas relevantes
+            colunas_tratadas_betha = ['Máscara Normalizada', 'Saldo Atual']
+            df_betha_tratado = df_betha[colunas_tratadas_betha]
+
+            # Salvar o DataFrame tratado do Betha para uso posterior
+            df_betha_tratado.to_csv('data/Betha_Tratado_Sintetico.csv', index=False, encoding='utf-8')
+            logging.info("Arquivo Betha tratado com sucesso no modo Sintético.")
+        except Exception as e:
+            logging.error(f"Erro ao processar o arquivo Betha: {e}")
+            return None
+
+        # - Comparação entre Betha e TCE -
+        try:
+            # Carregar os DataFrames tratados novamente (caso não estejam na memória)
+            df_betha_tratado = pd.read_csv('data/Betha_Tratado_Sintetico.csv', encoding='utf-8')
+            df_tce_tratado = pd.read_csv('data/TCE_Tratado_Sintetico.csv', encoding='utf-8')
+
+            # Realizar a comparação
+            df_comparacao = pd.merge(
+                df_betha_tratado,
+                df_tce_tratado,
+                left_on='Máscara Normalizada',  # Betha normalizado
+                right_on='Código Conta TCE',    # TCE original
+                how='inner'
+            )
+            # Remover duplicatas na coluna "Máscara Normalizada", mantendo apenas a primeira ocorrência
+            df_comparacao = df_comparacao.drop_duplicates(subset='Máscara Normalizada', keep='first')
+            # Calcular a diferença de saldos
+            df_comparacao['Diferença de Saldo'] = df_comparacao['Saldo Atual'] - df_comparacao['Saldo atual']
+
+            # Filtrar apenas as linhas com diferenças de saldo
+            df_diferencas = df_comparacao[df_comparacao['Diferença de Saldo'] != 0]
+
+            # Exportar os resultados da comparação e das diferenças
+            df_comparacao.to_csv('data/Comparacao_Betha_TCE_Sintetico.csv', index=False, encoding='utf-8')
+            df_diferencas.to_csv('data/Diferencas_Betha_TCE_Sintetico.csv', index=False, encoding='utf-8')
+
+            # Identificar máscaras sem correspondência
+            df_outer = pd.merge(
+                df_betha_tratado,
+                df_tce_tratado,
+                left_on='Máscara Normalizada',
+                right_on='Código Conta TCE',
+                how='outer',
+                indicator=True
+            )
+
+            # Filtrar máscaras exclusivas do Betha
+            df_sem_correspondencia_betha = df_outer[df_outer['_merge'] == 'left_only'][df_betha_tratado.columns]
+            df_sem_correspondencia_betha.to_csv('data/Mascaras_Sem_Correspondencia_Betha_Sintetico.csv', index=False, encoding='utf-8')
+
+            # Filtrar máscaras exclusivas do TCE
+            df_sem_correspondencia_tce = df_outer[df_outer['_merge'] == 'right_only'][df_tce_tratado.columns]
+            df_sem_correspondencia_tce.to_csv('data/Mascaras_Sem_Correspondencia_TCE_Sintetico.csv', index=False, encoding='utf-8')
+
+            logging.info("Máscaras sem correspondência identificadas e salvas com sucesso.")
+            return df_comparacao, df_diferencas
+        except Exception as e:
+            logging.error(f"Erro durante a comparação: {e}")
+            return None
+
     except Exception as e:
-        logging.error(f"Erro ao processar o arquivo TCE: {e}")
-        return None
-
-    # ------ Processamento do Betha ------
-    try:
-        # Carregar o arquivo Betha
-        df_betha = pd.read_csv('uploads/betha.csv', dtype={'Máscara': str})
-        
-        # Normalizar máscaras no Betha
-        df_betha['Máscara Normalizada'] = df_betha['Máscara'].apply(normalizar_mascara)
-        
-        # Limpar e converter saldos no Betha
-        df_betha['Saldo Atual'] = df_betha['Saldo atual'].apply(limpar_saldo)
-        
-        # Selecionar colunas relevantes
-        colunas_tratadas_betha = ['Máscara Normalizada', 'Saldo Atual']
-        df_betha_tratado = df_betha[colunas_tratadas_betha]
-        
-        # Salvar o DataFrame tratado do Betha para uso posterior
-        df_betha_tratado.to_csv('data/Betha_Tratado_Sintetico.csv', index=False, encoding='utf-8')
-        logging.info("Arquivo Betha tratado com sucesso no modo Sintético.")
-    except Exception as e:
-        logging.error(f"Erro ao processar o arquivo Betha: {e}")
-        return None
-
-    # ------ Comparação entre Betha e TCE ------
-    try:
-        # Carregar os DataFrames tratados novamente (caso não estejam na memória)
-        df_betha_tratado = pd.read_csv('data/Betha_Tratado_Sintetico.csv', encoding='utf-8')
-        df_tce_tratado = pd.read_csv('data/TCE_Tratado_Sintetico.csv', encoding='utf-8')
-
-        # Realizar a comparação
-        df_comparacao = pd.merge(
-            df_betha_tratado,
-            df_tce_tratado,
-            left_on='Máscara Normalizada',  # Betha normalizado
-            right_on='Código Conta TCE',    # TCE original
-            how='inner'
-        )
-
-        # Calcular a diferença de saldos
-        df_comparacao['Diferença de Saldo'] = df_comparacao['Saldo Atual'] - df_comparacao['Saldo atual']
-
-        # Filtrar apenas as linhas com diferenças de saldo
-        df_diferencas = df_comparacao[df_comparacao['Diferença de Saldo'] != 0]
-
-        # Exportar os resultados da comparação e das diferenças
-        df_comparacao.to_csv('data/Comparacao_Betha_TCE_Sintetico.csv', index=False, encoding='utf-8')
-        df_diferencas.to_csv('data/Diferencas_Betha_TCE_Sintetico.csv', index=False, encoding='utf-8')
-
-        # Identificar máscaras sem correspondência
-        df_outer = pd.merge(
-            df_betha_tratado,
-            df_tce_tratado,
-            left_on='Máscara Normalizada',
-            right_on='Código Conta TCE',
-            how='outer',
-            indicator=True
-        )
-
-        # Filtrar máscaras exclusivas do Betha
-        df_sem_correspondencia_betha = df_outer[df_outer['_merge'] == 'left_only'][df_betha_tratado.columns]
-        df_sem_correspondencia_betha.to_csv('data/Mascaras_Sem_Correspondencia_Betha_Sintetico.csv', index=False, encoding='utf-8')
-
-        # Filtrar máscaras exclusivas do TCE
-        df_sem_correspondencia_tce = df_outer[df_outer['_merge'] == 'right_only'][df_tce_tratado.columns]
-        df_sem_correspondencia_tce.to_csv('data/Mascaras_Sem_Correspondencia_TCE_Sintetico.csv', index=False, encoding='utf-8')
-
-        logging.info("Máscaras sem correspondência identificadas e salvas com sucesso.")
-        return df_comparacao, df_diferencas
-    except Exception as e:
-        logging.error(f"Erro durante a comparação: {e}")
+        logging.error(f"Erro geral no processamento sintético: {e}")
         return None
 
 if __name__ == "__main__":

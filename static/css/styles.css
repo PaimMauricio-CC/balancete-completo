@@ -1,3 +1,4 @@
+/* Base Styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -6,7 +7,7 @@ body {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 100%; /* Garante que o container ocupe toda a largura disponível */
     margin: 50px auto;
     padding: 20px;
     background: white;
@@ -34,4 +35,167 @@ h1 {
     border: 1px solid #ddd;
     border-radius: 5px;
     min-height: 100px;
+}
+
+/* Custom styles on top of Bootstrap */
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2c3e50;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+body {
+    background-color: #f5f8fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    width: 100%; /* Garante que o card ocupe toda a largura do container */
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 1rem;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+/* Table styling improvements */
+.table {
+    margin-bottom: 0;
+    width: 100%;
+    table-layout: fixed; /* Garante que as colunas se ajustem automaticamente */
+    word-break: break-word; /* Quebra palavras longas */
+}
+
+.table thead th {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--secondary-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+/* Centralizar colunas específicas */
+.table td:nth-child(3), /* Saldo_atual_Betha */
+.table td:nth-child(4), /* Saldo_atual_TCE */
+.table td:nth-child(5)  /* Diferença de Saldo */ {
+    text-align: center; /* Centraliza o texto */
+}
+
+/* Cabeçalhos também devem ser centralizados */
+.table th:nth-child(3), /* Saldo_atual_Betha */
+.table th:nth-child(4), /* Saldo_atual_TCE */
+.table th:nth-child(5)  /* Diferença de Saldo */ {
+    text-align: center; /* Centraliza os cabeçalhos */
+}
+
+/* Button styles */
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    border: none;
+    box-shadow: 0 4px 6px rgba(41, 128, 185, 0.2);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(41, 128, 185, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: none;
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(46, 204, 113, 0.3);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Form elements */
+.form-control, .form-select {
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+    border-color: #3498db;
+}
+
+.input-group-text {
+    border-radius: 0 0.375rem 0.375rem 0;
+    padding: 0.75rem 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Cursor pointer for collapsible headers */
+.cursor-pointer {
+    cursor: pointer;
 }

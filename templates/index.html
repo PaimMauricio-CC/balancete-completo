@@ -4,46 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comparativo Balancete</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Comparativo Balancete</h1>
-        
-        <!-- Formulário para upload dos arquivos -->
-        <form id="uploadForm" method="post" enctype="multipart/form-data">
-            <div class="file-input">
-                <label for="bethaFile">Arquivo Betha:</label>
-                <input type="file" id="bethaFile" name="bethaFile" required>
-            </div>
-            <div class="file-input">
-                <label for="tceFile">Arquivo TCE:</label>
-                <input type="file" id="tceFile" name="tceFile" required>
-            </div>
-            <div class="mode-selection">
-                <label for="mode">Modo de Comparação:</label>
-                <select id="mode" name="mode">
-                    <option value="analitico">Comparativo Balancete - Conta Corrente</option>
-                    <option value="sintetico">Comparativo Balancete Geral</option>
-                </select>
-            </div>
-            <button type="submit">Processar</button>
-        </form>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10">
+                <div class="card shadow-lg border-0 rounded-lg mb-5">
+                    <div class="card-header bg-primary text-white">
+                        <h1 class="text-center my-3"><i class="fas fa-balance-scale me-2"></i>Comparativo Balancete</h1>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Formulário para upload dos arquivos -->
+                        <form id="uploadForm" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label for="bethaFile" class="form-label">Arquivo Betha:</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" id="bethaFile" name="bethaFile" required>
+                                            <span class="input-group-text bg-light"><i class="fas fa-file-csv"></i></span>
+                                        </div>
+                                        <div class="invalid-feedback">Por favor, selecione o arquivo Betha.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-group">
+                                        <label for="tceFile" class="form-label">Arquivo TCE:</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" id="tceFile" name="tceFile" required>
+                                            <span class="input-group-text bg-light"><i class="fas fa-file-csv"></i></span>
+                                        </div>
+                                        <div class="invalid-feedback">Por favor, selecione o arquivo TCE.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="mode" class="form-label">Modo de Comparação:</label>
+                                <select id="mode" name="mode" class="form-select">
+                                    <option value="analitico">Comparativo Balancete - Conta Corrente</option>
+                                    <option value="sintetico">Comparativo Balancete Geral</option>
+                                </select>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-cogs me-2"></i>Processar
+                                </button>
+                            </div>
+                        </form>
 
-        <!-- Área para exibir os resultados -->
-        <div id="output">
-            {% if comparacao_html %}
-                <h2>Resultado da Comparação</h2>
-                {{ comparacao_html | safe }}
-                <a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="btn">Baixar Comparação (CSV)</a>
-            {% endif %}
+                        <!-- Loader indicator -->
+                        <div id="processing" class="text-center my-4 d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Processando...</span>
+                            </div>
+                            <p class="mt-2">Processando arquivos, por favor aguarde...</p>
+                        </div>
+                    </div>
+                </div>
 
-            {% if diferencas_html %}
-                <h2>Diferenças Encontradas</h2>
-                {{ diferencas_html | safe }}
-                <a href="{{ url_for('download', filename=diferencas_file.split('/')[-1]) }}" class="btn">Baixar Diferenças (CSV)</a>
-            {% endif %}
+                <!-- Área para exibir os resultados -->
+                <div id="output" class="mt-4">
+                    {% if comparacao_html %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h2 class="h4 mb-0 text-primary cursor-pointer" data-bs-toggle="collapse" data-bs-target="#comparacao-resultados">
+                                    <i class="fas fa-table me-2"></i>Resultado da Comparação
+                                </h2>
+                            </div>
+                            <div id="comparacao-resultados" class="collapse show">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        {{ comparacao_html | safe }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-end">
+                                <a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="btn btn-success">
+                                    <i class="fas fa-download me-2"></i>Baixar Comparação (CSV)
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if diferencas_html %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h2 class="h4 mb-0 text-danger cursor-pointer" data-bs-toggle="collapse" data-bs-target="#diferencas-resultados">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Diferenças Encontradas
+                                </h2>
+                            </div>
+                            <div id="diferencas-resultados" class="collapse show">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        {{ diferencas_html | safe }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-end">
+                                <a href="{{ url_for('download', filename=diferencas_file.split('/')[-1]) }}" class="btn btn-danger">
+                                    <i class="fas fa-download me-2"></i>Baixar Diferenças (CSV)
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if sem_correspondencia_betha_html or sem_correspondencia_tce_html %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h2 class="h4 mb-0 text-warning cursor-pointer" data-bs-toggle="collapse" data-bs-target="#sem-correspondencia-resultados">
+                                    <i class="fas fa-exclamation-circle me-2"></i>Sem Correspondência
+                                </h2>
+                            </div>
+                            <div id="sem-correspondencia-resultados" class="collapse show">
+                                <div class="card-body p-0">
+                                    {% if sem_correspondencia_betha_html %}
+                                        <h3 class="text-primary">Betha</h3>
+                                        <div class="table-responsive">
+                                            {{ sem_correspondencia_betha_html | safe }}
+                                        </div>
+                                    {% endif %}
+                                    {% if sem_correspondencia_tce_html %}
+                                        <h3 class="text-danger">TCE</h3>
+                                        <div class="table-responsive">
+                                            {{ sem_correspondencia_tce_html | safe }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
