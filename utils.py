@@ -43,7 +43,7 @@ def extrair_conta_corrente(descricao):
     if descricao.startswith("2-Destinação de Recursos - "):
         return descricao.replace("2-Destinação de Recursos - ", "").strip()
     
-    # Caso 2: Transformar padrão "5-Conta Bancária+FR - ..." no formato desejado REVISADO
+    # Caso 2: Transformar padrão "5-Conta Bancária+FR - ..." FEITO PARA 2 CASOS FUNCIONANDO.
     elif descricao.startswith("5-Conta Bancária+FR - "):
         try:
             # Remove o prefixo
@@ -58,12 +58,18 @@ def extrair_conta_corrente(descricao):
                 conta_digito = partes[2]  # Ex: "9.633-4" ou "96.630-4"
                 destino = partes[3]  # Ex: "18997000"
                 # Monta a conta corrente no formato desejado
-                conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 8}{destino}"
-                return conta_corrente
+                if len(conta_digito) == 7:
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 8}{destino}"  # FUNCIONA.
+                elif len(conta_digito) == 8: 
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 7}{destino}"
+                else:
+                    return descricao
+                
         except Exception as e:
             print(f"Erro ao processar '5-Conta Bancária+FR': {e}")
             return descricao  # Retorna a descrição original em caso de erro
-    
+        return conta_corrente
+        
     # Caso 3: Remover "6-Credor - " e normalizar o CPF REVISADO
     elif descricao.startswith("6-Credor - "):
         cpf = descricao.replace("6-Credor - ", "").strip()
@@ -75,7 +81,7 @@ def extrair_conta_corrente(descricao):
             # Remove o prefixo
             descricao = descricao.replace("1-Célula da Receita - ", "").strip()
             # Remove todos os espaços
-            descricao = descricao.replace(" ", "")
+            #descricao = descricao.replace(" ", "")
             return descricao
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
@@ -101,11 +107,12 @@ def extrair_conta_corrente(descricao):
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
     
-    # Caso 6: Processar "4-Fonte de Recurso para abertura de créditos - X" REVISADO
+    # Caso 6: Processar "4-Fonte de Recurso para abertura de créditos - X" REVISADO, tinha que adicionar o 0
     elif descricao.startswith("4-Fonte de Recurso para abertura de créditos - "):
         try:
             # Remove o prefixo
             descricao = descricao.replace("4-Fonte de Recurso para abertura de créditos - ", "").strip()
+            descricao = f"{'0'}{descricao}"
             return descricao  # Retorna apenas o número isolado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
@@ -139,7 +146,6 @@ def extrair_conta_corrente(descricao):
             descricao = " ".join(descricao.split())
             # Divide a descrição em partes
             partes = descricao.split()
-            print(partes)  # Depuração: Mostra as partes após a divisão
             if len(partes) == 7:
                 ano = partes[0]           # Ex: "2023"
                 numero = partes[1]        # Ex: "Nº03/2023"
@@ -164,7 +170,6 @@ def extrair_conta_corrente(descricao):
             
             # Divide a descrição em partes
             partes = descricao.split()
-            print (partes)
             # Verifica se há exatamente 4 partes
             if len(partes) == 4:
                 orgao = partes[0].zfill(5)  # Ex: "13001"

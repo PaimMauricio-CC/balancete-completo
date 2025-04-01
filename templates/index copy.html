@@ -114,7 +114,6 @@
                         </div>
                     {% endif %}
 
-                    <!-- Seção de Sem Correspondência -->
                     {% if sem_correspondencia_betha_html or sem_correspondencia_tce_html %}
                         <div class="card shadow-sm mb-4">
                             <div class="card-header bg-light">
@@ -129,21 +128,11 @@
                                         <div class="table-responsive">
                                             {{ sem_correspondencia_betha_html | safe }}
                                         </div>
-                                        <div class="card-footer text-end">
-                                            <a href="{{ url_for('download', filename=sem_corresp_betha_file.split('/')[-1]) }}" class="btn btn-warning">
-                                                <i class="fas fa-download me-2"></i>Baixar Sem Correspondência (Betha)
-                                            </a>
-                                        </div>
                                     {% endif %}
                                     {% if sem_correspondencia_tce_html %}
                                         <h3 class="text-danger">TCE</h3>
                                         <div class="table-responsive">
                                             {{ sem_correspondencia_tce_html | safe }}
-                                        </div>
-                                        <div class="card-footer text-end">
-                                            <a href="{{ url_for('download', filename=sem_corresp_tce_file.split('/')[-1]) }}" class="btn btn-danger">
-                                                <i class="fas fa-download me-2"></i>Baixar Sem Correspondência (TCE)
-                                            </a>
                                         </div>
                                     {% endif %}
                                 </div>

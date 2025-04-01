@@ -5,7 +5,6 @@ import main
 app = Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
-@app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         # Obter arquivos enviados pelo usuário
@@ -21,9 +20,12 @@ def index():
 
         # Processar os arquivos com base no modo selecionado
         if mode == "analitico":
-            df_comparacao, df_diferencas = main.process_analitico()
+            df_comparacao, df_diferencas, df_sem_corresp_betha, df_sem_corresp_tce = main.process_analitico()
 
             # Converter os DataFrames para HTML para exibição
+            # Converta para HTML
+            sem_corresp_betha_html = df_sem_corresp_betha.to_html(classes="table table-striped", index=False)
+            sem_corresp_tce_html = df_sem_corresp_tce.to_html(classes="table table-striped", index=False)
             comparacao_html = df_comparacao.to_html(classes="table table-striped", index=False)
             diferencas_html = df_diferencas.to_html(classes="table table-striped", index=False)
 
@@ -31,8 +33,12 @@ def index():
                 "index.html",
                 comparacao_html=comparacao_html,
                 diferencas_html=diferencas_html,
+                sem_correspondencia_betha_html=sem_corresp_betha_html,  # Nova variável
+                sem_correspondencia_tce_html=sem_corresp_tce_html,      # Nova variável
                 comparacao_file="data/Comparacao_Betha_TCE.csv",
-                diferencas_file="data/Diferencas_Betha_TCE.csv"
+                diferencas_file="data/Diferencas_Betha_TCE.csv",
+                sem_corresp_betha_file="data/Mascaras_Sem_Correspondencia_Betha_Analitico.csv",
+                sem_corresp_tce_file="data/Mascaras_Sem_Correspondencia_TCE_Analitico.csv"
             )
         elif mode == "sintetico":
             # Chamar o processamento sintético
@@ -40,18 +46,24 @@ def index():
 
             # Verificar se o resultado é válido
             if isinstance(result, tuple):  # Se for uma tupla (df_comparacao, df_diferencas)
-                df_comparacao, df_diferencas = result
+                df_comparacao, df_diferencas, df_sem_corresp_betha, df_sem_corresp_tce = result
 
                 # Converter os DataFrames para HTML para exibição
                 comparacao_html = df_comparacao.to_html(classes="table table-striped", index=False)
                 diferencas_html = df_diferencas.to_html(classes="table table-striped", index=False)
+                sem_corresp_betha_html = df_sem_corresp_betha.to_html(classes="table table-striped", index=False)
+                sem_corresp_tce_html = df_sem_corresp_tce.to_html(classes="table table-striped", index=False)
 
                 return render_template(
                     "index.html",
                     comparacao_html=comparacao_html,
                     diferencas_html=diferencas_html,
-                    comparacao_file="data/Comparacao_Betha_TCE_Sintetico.csv",
-                    diferencas_file="data/Diferencas_Betha_TCE_Sintetico.csv"
+                    sem_correspondencia_betha_html=sem_corresp_betha_html,  # Nova variável
+                    sem_correspondencia_tce_html=sem_corresp_tce_html,      # Nova variável
+                    omparacao_file="data/Comparacao_Betha_TCE_Sintetico.csv",
+                    diferencas_file="data/Diferencas_Betha_TCE_Sintetico.csv",
+                    sem_corresp_betha_file="data/Mascaras_Sem_Correspondencia_Betha_Sintetico.csv",
+                    sem_corresp_tce_file="data/Mascaras_Sem_Correspondencia_TCE_Sintetico.csv"
                 )
             else:
                 return "Erro ao processar no modo Sintético."
