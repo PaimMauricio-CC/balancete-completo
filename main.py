@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import logging
+import re
 import chardet
 from utils import normalizar_mascara, extrair_conta_corrente, limpar_saldo, corrigir_tipo, normalizar_conta_tce, converter_notacao_cientifica
 # Processamento Analítico
@@ -34,6 +35,15 @@ def process_analitico():
     df_betha['Conta Corrente'] = df_betha['Descrição'].apply(extrair_conta_corrente)
     # Limpar e converter saldos para float
     df_betha['Saldo Atual'] = df_betha['Saldo atual'].apply(limpar_saldo)
+    # FILTRO ADICIONAL: Remover contas correntes que não contêm números
+    def contem_numeros(texto):
+        """Verifica se o texto contém pelo menos um número."""
+        if pd.isna(texto):  # Ignora valores NaN
+            return False
+        return bool(re.search(r'\d', str(texto)))  # Retorna True se houver pelo menos um número
+
+    # Aplicar o filtro para remover contas correntes que são apenas texto
+    df_betha = df_betha[df_betha['Conta Corrente'].apply(contem_numeros)]
 
     # Selecionar colunas relevantes para o DataFrame tratado
     colunas_tratadas_betha = ['Máscara Normalizada', 'Conta Corrente', 'Saldo Atual']
@@ -234,7 +244,15 @@ def process_sintetico():
                 suffixes=('_betha', '_tce')
             )
             # Para registros exclusivos do Betha
-            df_sem_correspondencia_betha = df_outer[df_outer['_merge'] == 'left_only'][[
+            #df_sem_correspondencia_betha = df_outer[df_outer['_merge'] == 'left_only'][[
+            #    'Máscara Normalizada', 
+            #    'Conta Corrente', 
+            #    'Saldo_atual_Betha'
+            #]]
+            df_sem_correspondencia_betha = df_outer[
+                (df_outer['_merge'] == 'left_only') & 
+                (df_outer['Tipo'] == 'Analitica')
+            ][[
                 'Máscara Normalizada', 
                 'Conta Corrente', 
                 'Saldo_atual_Betha'

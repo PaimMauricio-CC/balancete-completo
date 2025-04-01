@@ -1,5 +1,5 @@
 import pandas as pd
-
+import re
 # Função para normalizar máscaras no padrão X.X.X.X.X.XX.XX
 def normalizar_mascara(mascara):
     if pd.isna(mascara):  # Verifica se a máscara é NaN
@@ -81,7 +81,7 @@ def extrair_conta_corrente(descricao):
             # Remove o prefixo
             descricao = descricao.replace("1-Célula da Receita - ", "").strip()
             # Remove todos os espaços
-            #descricao = descricao.replace(" ", "")
+            descricao = descricao.replace(" ", "")
             return descricao
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
@@ -283,3 +283,10 @@ def converter_notacao_cientifica(valor):
     except ValueError:
         # Se falhar, retorna o valor original (texto)
         return valor
+    
+# FILTRO ADICIONAL: Remover contas correntes que não contêm números
+def contem_numeros(texto):
+    """Verifica se o texto contém pelo menos um número."""
+    if pd.isna(texto):  # Ignora valores NaN
+        return False
+    return bool(re.search(r'\d', str(texto)))  # Retorna True se houver pelo menos um número
