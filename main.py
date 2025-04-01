@@ -76,6 +76,7 @@ def process_analitico():
 
     # Limpar e converter saldos no TCE
     df_tce['Saldo atual'] = df_tce['Saldo atual'].apply(limpar_saldo)
+    df_tce = df_tce[df_tce['Conta Corrente'].apply(contem_numeros)]
 
     # Extrair e formatar a coluna "Conta Corrente"
     df_tce['Conta Corrente'] = df_tce['Conta Corrente Normalizada'].apply(extrair_conta_corrente)

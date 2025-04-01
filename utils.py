@@ -1,5 +1,5 @@
 import pandas as pd
-import re
+
 # Função para normalizar máscaras no padrão X.X.X.X.X.XX.XX
 def normalizar_mascara(mascara):
     if pd.isna(mascara):  # Verifica se a máscara é NaN
@@ -116,8 +116,19 @@ def extrair_conta_corrente(descricao):
             return descricao  # Retorna apenas o número isolado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
+        
+    # Caso 7: Processar "9-Especificação da Unidade Gestora -  X" REVISADO, tinha que adicionar o 0
+    elif descricao.startswith("9-Especificação da Unidade Gestora - "):
+        try:
+            # Remove o prefixo
+            descricao = descricao.replace("9-Especificação da Unidade Gestora - ", "").strip()
+            descricao = descricao.replace(" ", "")
+            descricao = f"{'0'}{descricao}"
+            return descricao  # Retorna apenas o número isolado
+        except Exception:
+            return descricao  # Retorna a descrição original em caso de erro
     
-    # Caso 7: Processar "14-Contratos e Convênios - ..." REVISADO
+    # Caso 8: Processar "14-Contratos e Convênios - ..." REVISADO
     elif descricao.startswith("14-Contratos e Convênios - "):
         try:
             # Remove o prefixo
@@ -137,7 +148,7 @@ def extrair_conta_corrente(descricao):
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
     
-    # Caso 8: Processar "13-Consórcios - ..." REVISADO
+    # Caso 9: Processar "13-Consórcios - ..." REVISADO
     elif descricao.startswith("13-Consórcios - "):
         try:
             # Remove o prefixo
@@ -160,8 +171,9 @@ def extrair_conta_corrente(descricao):
                 return consorcio_formatado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
+
     
-    # Caso 9: Processar "3-Célula da Despesa - ..." (padrão TCE) REVISADO
+    # Caso 10: Processar "3-Célula da Despesa - ..." (padrão TCE) REVISADO
     
     elif descricao.startswith("3-Célula da Despesa - "):
         try:
@@ -284,9 +296,3 @@ def converter_notacao_cientifica(valor):
         # Se falhar, retorna o valor original (texto)
         return valor
     
-# FILTRO ADICIONAL: Remover contas correntes que não contêm números
-def contem_numeros(texto):
-    """Verifica se o texto contém pelo menos um número."""
-    if pd.isna(texto):  # Ignora valores NaN
-        return False
-    return bool(re.search(r'\d', str(texto)))  # Retorna True se houver pelo menos um número
