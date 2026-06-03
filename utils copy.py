@@ -41,10 +41,7 @@ def extrair_conta_corrente(descricao):
 
     # Caso 1: Remover "2-Destinação de Recursos - " e manter apenas o número REVISADO
     if descricao.startswith("2-Destinação de Recursos - "):
-        destino = descricao.replace("2-Destinação de Recursos - ", "").strip().replace(" ", "")
-        if destino.isdigit() and len(destino) > 8:
-            return destino[:8]
-        return destino
+        return descricao.replace("2-Destinação de Recursos - ", "").strip()
     
     # Caso 2: Transformar padrão "5-Conta Bancária+FR - ..." FEITO PARA 2 CASOS FUNCIONANDO.
     elif descricao.startswith("5-Conta Bancária+FR - "):
@@ -55,48 +52,31 @@ def extrair_conta_corrente(descricao):
             descricao = " ".join(descricao.split())
             # Divide a descrição em partes
             partes = descricao.split()
-            if len(partes) >= 6:
-                banco = partes[0].zfill(4)
-                agencia = partes[1].zfill(5)
-                agencia_digito = partes[2]
-                conta = partes[3]
-                conta_digito = partes[4]
-                destino = partes[5]
-
-                prefixo = f"{banco}{agencia}{agencia_digito}"
-                conta_destino = f"{conta}{conta_digito}{destino}"
-                espacos_necessarios = 33 - (len(prefixo) + len(conta_destino))
-
-                conta_corrente = f"{prefixo}{' ' * max(0, espacos_necessarios)}{conta_destino}"
-                return conta_corrente
-
             if len(partes) >= 4:
                 banco = partes[0].zfill(4)  # Garante 4 dígitos
                 agencia = partes[1].zfill(5)  # Garante 5 dígitos
                 conta_digito = partes[2]  # Ex: "9.633-4" ou "96.630-4"
                 destino = partes[3]  # Ex: "18997000"
-
-                # Calcula o número de espaços necessários dinamicamente
-                total_caracteres = 33  # Total desejado de caracteres (incluindo banco, agência, conta_digito e espaços)
-                tamanho_fixo = len(banco) + len(agencia) + len(destino) + 1  # +1 para o '0' entre agência e conta_digito
-                espacos_necessarios = total_caracteres - (tamanho_fixo + len(conta_digito))
-
                 # Monta a conta corrente no formato desejado
-                conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * max(0, espacos_necessarios)}{destino}"
-                return conta_corrente
-        except Exception as e:
-            print(f"Erro ao processar '5-Conta Bancária+FR': {e}")
-            return descricao  # Retorna a descrição original em caso de erro
+                if len(conta_digito) == 7:
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 8}{destino}"  # FUNCIONA.
+                elif len(conta_digito) == 8: 
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 7}{destino}"
+                elif len(conta_digito) == 9:
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 6}{destino}"
+                elif len(conta_digito) == 6:
+                    conta_corrente = f"{banco}{'0'}{agencia}{conta_digito}{' ' * 8}{destino}"
+                else:
+                    return descricao
                 
         except Exception as e:
             print(f"Erro ao processar '5-Conta Bancária+FR': {e}")
             return descricao  # Retorna a descrição original em caso de erro
-        return descricao
+        return conta_corrente
         
     # Caso 3: Remover "6-Credor - " e normalizar o CPF REVISADO
     elif descricao.startswith("6-Credor - "):
         cpf = descricao.replace("6-Credor - ", "").strip()
-        descricao = descricao.replace(" ", "")
         return normalizar_cpf(cpf)  # Normaliza o CPF
     
     # Caso 4: Processar "1-Célula da Receita - ..." REVISADO
@@ -147,10 +127,7 @@ def extrair_conta_corrente(descricao):
             # Remove o prefixo
             descricao = descricao.replace("9-Especificação da Unidade Gestora - ", "").strip()
             descricao = descricao.replace(" ", "")
-            if descricao.startswith("0"):
-                descricao = f"{descricao}"
-            else: 
-                descricao = f"{'0'}{descricao}"
+            descricao = f"{'0'}{descricao}"
             return descricao  # Retorna apenas o número isolado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
@@ -160,32 +137,19 @@ def extrair_conta_corrente(descricao):
         try:
             # Remove o prefixo
             descricao = descricao.replace("14-Contratos e Convênios - ", "").strip()
-            
-            # Remove espaços extras entre os campos
-            descricao = " ".join(descricao.split())
-            
             # Divide a descrição em partes
             partes = descricao.split()
-            # Verifica se há pelo menos 4 partes (ano, mês, número do contrato, CNPJ)
             if len(partes) >= 4:
                 ano = partes[0]  # Ex: "2019"
                 mes = partes[1]  # Ex: "08"
-                
-                # Concatena as partes restantes para formar o número do contrato
-                numero_contrato = " ".join(partes[2:-1])  # Junta tudo exceto o último campo (CNPJ)
-                cnpj = partes[-1]  # O último campo é sempre o CNPJ
-
+                numero_contrato = partes[2]  # Ex: "Nº03/2022_17/19" ou "Nº15/2019"
+                cnpj = partes[3] # Ex: "08584873000109"
                 # Garantir que o número do contrato tenha um comprimento fixo de 15 caracteres
-                #numero_contrato = numero_contrato.ljust(15)
-                if (len(numero_contrato) >= 16):
-                    padrao_contrato = f"{ano}{mes}{numero_contrato}{cnpj}"
+                numero_contrato = numero_contrato.ljust(15)
                 # Monta o padrão TCE
-                else:
-                    numero_contrato = numero_contrato.ljust(15)
-                    padrao_contrato = f"{ano}{mes}{numero_contrato}{' '}{cnpj}"
+                padrao_contrato = f"{ano}{mes}{numero_contrato}{' '}{cnpj}"
                 return padrao_contrato
-        except Exception as e:
-            print(f"Erro ao processar '14-Contratos e Convênios': {e}")
+        except Exception:
             return descricao  # Retorna a descrição original em caso de erro
     
     # Caso 9: Processar "13-Consórcios - ..." REVISADO
@@ -205,87 +169,16 @@ def extrair_conta_corrente(descricao):
                 codigo2 = partes[4]       # Ex: "301"
                 codigo3 = partes[5][:4]   # Ex: "3171" (primeiros 4 caracteres) ELEMENTO DA DESPESA
                 destino = partes[6]   # Concatena "15001002"
-                if len(numero) == 10:
-                    consorcio_formatado = f"{ano}{numero}{' ' * 6}{cnpj}{codigo1}{codigo2}{codigo3}{'00'}{destino}"
-                else:    
+
                 # Monta o padrão TCE
-                    consorcio_formatado = f"{ano}{numero}{' ' * 7}{cnpj}{codigo1}{codigo2}{codigo3}{'00'}{destino}"
+                consorcio_formatado = f"{ano}{numero}{' ' * 7}{cnpj}{codigo1}{codigo2}{codigo3}{'00'}{destino}"
                 return consorcio_formatado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
 
-    # Caso 10: Transformar padrão "11-Dívida Fundada - ..." Revisado.
-    elif descricao.startswith("11-Dívida Fundada - "):
-        try:
-            # Remove o prefixo
-            descricao = descricao.replace("11-Dívida Fundada - ", "").strip()
-            # Remove espaços extras entre os campos
-            descricao = " ".join(descricao.split())
-            # Divide a descrição em partes
-            partes = descricao.split()
-            if len(partes) == 5:
-                ano = partes[0]           # Ex: "2023"
-                numero = partes[1]        # Ex: "11065/22"
-                codigo1 = partes[2]          # Ex: "2022"
-                codigo2 = partes[3]       # Ex: "2022052301"
-                codigo3 = partes[4]       # Ex: "50"
-                # Monta o padrão TCE
-                divida_formatada = f"{ano}{numero}{' ' * 8}{codigo1}{codigo2}{' ' * 6}{codigo3}"
-                return divida_formatada
-        except Exception as e:
-            print(f"Erro ao processar '11- divida fundada': {e}")
-            return descricao  # Retorna a descrição original em caso de erro
-        
-    # Caso 11: "Transformar padrão "12-Responsáveis - "    
-    elif descricao.startswith("12-Responsáveis - "):
-        try:
-            # Remover o texto
-            descricao = descricao.replace("12-Responsáveis - ", "").strip()
-            # Remover espaços
-            descricao = " ".join(descricao.split())
-            partes = descricao.split()
-            if len(partes) == 3:
-                ano = partes[0]           # Ex: "2015"
-                numero = partes[1]        # Ex: "1"
-                codigo1 = partes[2]       # Ex: "9999999999" CPF
-                codigo_formatado = f"{ano}{numero}".ljust(24) + codigo1
-                return codigo_formatado  # Normaliza o CPF
-            
-        except Exception as e:
-            print(f"Erro ao processar '11- divida fundada': {e}")
-            return descricao  # Retorna a descrição original em caso de erro
-
-    # Caso 12: Processar "10-Precatório - ..."
-    elif descricao.startswith("10-Precatório - "):
-        try:
-            descricao = descricao.replace("10-Precatório - ", "").strip()
-            descricao = " ".join(descricao.split())
-            partes = descricao.split()
-            if len(partes) == 5:
-                ano = partes[0]
-                numero = partes[1]
-                codigo1 = partes[2]
-                codigo2 = partes[3]
-                documento = partes[4]
-                prefixo = f"{ano}{numero}".ljust(20)
-                codigo = f"0{codigo1}0{codigo2}"
-                espacos_documento = " " * 11 if len(documento) == 14 else ""
-                return f"{prefixo}{codigo}{espacos_documento}{documento}"
-        except Exception:
-            return descricao
-
-    # Caso 12: Processar "20-Receitas a Receber - "
-    elif descricao.startswith("20-Receitas a Receber - "):
-        try:
-            # Remove o prefixo
-            descricao = descricao.replace("20-Receitas a Receber - ", "").strip()
-            # Remove todos os espaços
-            descricao = descricao.replace(" ", "")
-            return descricao
-        except Exception:
-            return descricao  # Retorna a descrição original em caso de erro
-
-    # Caso 13: Processar "3-Célula da Despesa - ..." (padrão TCE) REVISADO
+    
+    # Caso 10: Processar "3-Célula da Despesa - ..." (padrão TCE) REVISADO
+    
     elif descricao.startswith("3-Célula da Despesa - "):
         try:
             # Remove o prefixo
@@ -313,7 +206,7 @@ def extrair_conta_corrente(descricao):
     return descricao  # Retorna a descrição original se não for uma célula da despesa
     
     # Caso genérico: Retorna a descrição original caso não se encaixe nos padrões
-    #return descricao
+    return descricao
 ###################################### FINALIZA O TRATATAMENTO DOS PADRÔES DE CONTAS ##########################################
 
 def formatar_mascara(mascara):  # Corrigir a mascara para o caso 9: 3-Célula da Despesa
@@ -328,8 +221,8 @@ def formatar_mascara(mascara):  # Corrigir a mascara para o caso 9: 3-Célula da
         mascara = str(mascara)
         
         # Separa o primeiro dígito e o restante da máscara
-        primeiro_digito = "9" if mascara.startswith("00") else mascara[0]  # Primeiro dígito (ex.: "1", "2", "3")
-        resto_mascara = mascara.zfill(6)  # Máscara completa com zeros à esquerda
+        primeiro_digito = mascara[0]  # Primeiro dígito (ex.: "1", "2", "3")
+        resto_mascara = mascara[1:].zfill(6)  # Restante da máscara (ex.: "037", "038", "039")
         # Formata conforme o padrão TCE
         mascara_formatada = f"{primeiro_digito}{resto_mascara}"
         return mascara_formatada
@@ -376,7 +269,7 @@ def normalizar_conta_tce(conta):
         return None
 
     # Converte a conta para string (caso ainda não seja)
-    conta = str(conta).rstrip()
+    conta = str(conta)
 
     # Ignora contas que começam com "99"
     if conta.startswith("99"):
@@ -414,31 +307,3 @@ def remover_sinal_negativo(valor):
         # Remover o sinal negativo apenas se o valor for negativo
     return abs(valor)
     
- # Ajustar o saldo com base no "Tipo Saldo" (C/D)
-def ajustar_saldo(row, saldo_type="atual"):
-    """
-    Ajusta o saldo com base no tipo de saldo ('D' para débito, 'C' para crédito).
-    
-    Parâmetros:
-        row (pd.Series): Uma linha do DataFrame contendo as colunas 'Saldo Atual', 'Saldo Anterior' e 'Tipo Saldo'.
-        saldo_type (str): Especifica o tipo de saldo a ser ajustado ('atual' ou 'anterior').
-    
-    Retorna:
-        float: O saldo ajustado com base no tipo de saldo.
-    """
-    # Determina qual coluna de saldo usar com base no parâmetro saldo_type
-    if saldo_type == "atual":
-        saldo = row['Saldo atual']
-    elif saldo_type == "anterior":
-        saldo = row['Saldo anterior']
-    else:
-        raise ValueError("O parâmetro 'saldo_type' deve ser 'atual' ou 'anterior'.")
-
-    # Ajusta o saldo com base no tipo ('D' para débito, 'C' para crédito)
-    tipo_saldo = row['Tipo Saldo']
-    if tipo_saldo == 'D':  # Débito
-        return -saldo
-    elif tipo_saldo == 'C':  # Crédito
-        return saldo
-    else:
-        return saldo  # Caso o tipo seja desconhecido, mantém o valor original
