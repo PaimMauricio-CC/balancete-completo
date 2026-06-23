@@ -3,7 +3,7 @@ import sys
 import logging
 import re
 import chardet
-from utils import normalizar_mascara, extrair_conta_corrente, limpar_saldo, corrigir_tipo, normalizar_conta_tce, converter_notacao_cientifica,remover_sinal_negativo, ajustar_saldo
+from utils import normalizar_mascara, extrair_conta_corrente, limpar_saldo, corrigir_tipo, normalizar_conta_tce, converter_notacao_cientifica,remover_sinal_negativo, ajustar_saldo, normalizar_conta_corrente_comparacao
 # Processamento Analítico
 def process_analitico(saldo_type="atual"):
     print(f"Iniciando processamento no modo Analítico com Saldo {saldo_type.capitalize()}...")
@@ -33,6 +33,7 @@ def process_analitico(saldo_type="atual"):
 
     # Criar uma nova coluna "Conta Corrente" aplicando a função
     df_betha['Conta Corrente'] = df_betha['Descrição'].apply(extrair_conta_corrente)
+    df_betha['Conta Corrente'] = df_betha['Conta Corrente'].apply(normalizar_conta_corrente_comparacao)
 
     # Limpar e converter saldos para float (baseado no tipo de saldo escolhido)
     if saldo_type == "atual":
@@ -64,6 +65,20 @@ def process_analitico(saldo_type="atual"):
         if pd.isna(texto):  # Ignora valores NaN
             return False
         return bool(re.search(r'\d', str(texto)))  # Retorna True se houver pelo menos um número
+
+    def parece_conta_corrente_tce(texto):
+        """Remove linhas analíticas do TCE que usam descrição textual no lugar da conta corrente."""
+        if pd.isna(texto):
+            return False
+
+        valor = str(texto).strip()
+        if not valor:
+            return False
+        if valor[0].isalpha():
+            return False
+        if re.match(r'^\d+\.\s*[^\d\s]', valor):
+            return False
+        return True
 
     # Aplicar o filtro para remover contas correntes que são apenas texto
     df_betha = df_betha[df_betha['Conta Corrente'].apply(contem_numeros)]
@@ -106,10 +121,12 @@ def process_analitico(saldo_type="atual"):
 
     # Limpar e converter saldos no TCE
     df_tce['Saldo atual'] = df_tce['Saldo atual'].apply(limpar_saldo)
+    df_tce = df_tce[df_tce['Conta Corrente'].apply(parece_conta_corrente_tce)]
     df_tce = df_tce[df_tce['Conta Corrente'].apply(contem_numeros)]
 
     # Extrair e formatar a coluna "Conta Corrente"
     df_tce['Conta Corrente'] = df_tce['Conta Corrente Normalizada'].apply(extrair_conta_corrente)
+    df_tce['Conta Corrente'] = df_tce['Conta Corrente'].apply(normalizar_conta_corrente_comparacao)
     colunas_tce = ['Máscara Normalizada', 'Conta Corrente', 'Saldo atual']
     df_tce_filtrado = df_tce[colunas_tce]
 
@@ -227,6 +244,7 @@ def process_sintetico(saldo_type="atual"):
 
             # Extrair e formatar a coluna "Conta Corrente"
             df_tce['Conta Corrente'] = df_tce['Conta Corrente Normalizada'].apply(extrair_conta_corrente)
+            df_tce['Conta Corrente'] = df_tce['Conta Corrente'].apply(normalizar_conta_corrente_comparacao)
 
             # Remover duplicatas na coluna "Máscara Normalizada", mantendo apenas a primeira ocorrência
             df_tce = df_tce.drop_duplicates(subset='Máscara Normalizada', keep='first')
@@ -249,6 +267,7 @@ def process_sintetico(saldo_type="atual"):
 
             # Criar uma nova coluna "Conta Corrente" aplicando a função
             df_betha['Conta Corrente'] = df_betha['Descrição'].apply(extrair_conta_corrente)
+            df_betha['Conta Corrente'] = df_betha['Conta Corrente'].apply(normalizar_conta_corrente_comparacao)
             df_betha = df_betha[df_betha['Tipo'] == 'Sintética']
 
             # Limpar e converter saldos no Betha

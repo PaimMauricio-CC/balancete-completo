@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 
 # Função para normalizar máscaras no padrão X.X.X.X.X.XX.XX
@@ -264,8 +266,8 @@ def extrair_conta_corrente(descricao):
             if len(partes) == 5:
                 ano = partes[0]
                 numero = partes[1]
-                codigo1 = partes[2]
-                codigo2 = partes[3]
+                codigo1 = str(int(partes[2]))
+                codigo2 = str(int(partes[3]))
                 documento = partes[4]
                 prefixo = f"{ano}{numero}".ljust(20)
                 codigo = f"0{codigo1}0{codigo2}"
@@ -328,7 +330,12 @@ def formatar_mascara(mascara):  # Corrigir a mascara para o caso 9: 3-Célula da
         mascara = str(mascara)
         
         # Separa o primeiro dígito e o restante da máscara
-        primeiro_digito = "9" if mascara.startswith("00") else mascara[0]  # Primeiro dígito (ex.: "1", "2", "3")
+        if mascara.startswith("00"):
+            primeiro_digito = "9"
+        elif mascara[0] in ("3", "4"):
+            primeiro_digito = str(int(mascara[0]) - 2)
+        else:
+            primeiro_digito = mascara[0]
         resto_mascara = mascara.zfill(6)  # Máscara completa com zeros à esquerda
         # Formata conforme o padrão TCE
         mascara_formatada = f"{primeiro_digito}{resto_mascara}"
@@ -389,6 +396,36 @@ def normalizar_conta_tce(conta):
         return conta_normalizada
 
     # Retorna a conta inalterada se não tiver 16 dígitos
+    return conta
+
+def normalizar_conta_corrente_comparacao(conta):
+    """
+    Normaliza diferencas de formatacao que nao mudam a conta corrente.
+    Ex.: conta bancaria com prefixo de banco/agencia igual, mas com quantidade
+    diferente de espacos e zeros a esquerda no bloco final.
+    """
+    if pd.isna(conta):
+        return None
+
+    conta = str(conta).rstrip()
+    conta_bancaria = re.match(r"^(\d{10})\s+(.+)$", conta)
+    if conta_bancaria:
+        prefixo = conta_bancaria.group(1)
+        restante = conta_bancaria.group(2).strip()
+        restante = re.sub(r"^0+(?=[0-9X])", "", restante)
+        return f"{prefixo} {restante}"
+
+    partes = conta.split()
+    if len(partes) == 8 and all(re.fullmatch(r"\d+", parte) for parte in partes):
+        orgao, acao, natureza, recurso, tipo, ano, licitacao, item = partes
+        return f"{orgao}0{formatar_mascara(acao)}{natureza}{recurso}{tipo}{ano}{licitacao}{item}"
+
+    if re.fullmatch(r"\d+", conta):
+        if len(conta) <= 12:
+            return conta.lstrip("0") or "0"
+        if len(conta) >= 62:
+            return conta[:49]
+
     return conta
 
 def converter_notacao_cientifica(valor):
