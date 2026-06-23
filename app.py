@@ -1,13 +1,23 @@
 import os
+from pathlib import Path
 
 from flask import Flask, abort, render_template, request, send_from_directory
 import pandas as pd
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.exceptions import RequestEntityTooLarge
 import main
 import conferidor_folha
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_CONTENT_LENGTH", 32 * 1024 * 1024))
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-this-secret-key")
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+UPLOAD_DIR = BASE_DIR / "uploads"
+DATA_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 LICENSES = {
     "KYP12": {"GOVERNADOR CELSO RAMOS"},
@@ -116,10 +126,10 @@ def process_folha(betha_path, tce_path):
     xlsx_filename = "Conferencia_Folha.xlsx"
     highlighted_xlsx_filename = "Conferencia_Folha_Destacado.xlsx"
 
-    df_resultado.to_csv(os.path.join("data", csv_filename), index=False, encoding="utf-8")
-    with open(os.path.join("data", xlsx_filename), "wb") as file:
+    df_resultado.to_csv(DATA_DIR / csv_filename, index=False, encoding="utf-8")
+    with open(DATA_DIR / xlsx_filename, "wb") as file:
         file.write(conferidor_folha.gerar_excel_conferencia(rows, summary))
-    with open(os.path.join("data", highlighted_xlsx_filename), "wb") as file:
+    with open(DATA_DIR / highlighted_xlsx_filename, "wb") as file:
         file.write(conferidor_folha.gerar_excel_conferencia_destacado(rows, summary))
 
     summary_cards = [
@@ -169,12 +179,12 @@ def index():
             return render_alert("O arquivo TCE deve estar no formato CSV.")
 
         # Salvar os arquivos temporariamente
-        os.makedirs("uploads", exist_ok=True)
-        os.makedirs("data", exist_ok=True)
-        betha_path = "uploads/betha.csv"
-        tce_path = "uploads/tce.csv"
-        betha_file.save(betha_path)
-        tce_file.save(tce_path)
+        UPLOAD_DIR.mkdir(exist_ok=True)
+        DATA_DIR.mkdir(exist_ok=True)
+        betha_path = UPLOAD_DIR / "betha.csv"
+        tce_path = UPLOAD_DIR / "tce.csv"
+        betha_file.save(str(betha_path))
+        tce_file.save(str(tce_path))
 
         try:
             if conferidor_type == "folha":
@@ -288,8 +298,10 @@ def download(filename):
         abort(404)
     if not has_allowed_extension(filename, ALLOWED_DOWNLOAD_EXTENSIONS):
         abort(404)
-    return send_from_directory("data", filename, as_attachment=True)
+    return send_from_directory(DATA_DIR, filename, as_attachment=True)
 
 if __name__ == "__main__":
     debug = os.environ.get("FLASK_DEBUG") == "1"
-    app.run(host="0.0.0.0", port=5000, debug=debug)
+    host = os.environ.get("APP_HOST", "0.0.0.0")
+    port = int(os.environ.get("APP_PORT", "8091"))
+    app.run(host=host, port=port, debug=debug)
