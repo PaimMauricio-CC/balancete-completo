@@ -336,13 +336,15 @@ def processar_conferencia(
     betha_df, betha_metadata = read_csv_auto(betha_source)
     tce_df, tce_metadata = read_csv_auto(tce_source)
     result, summary = comparar_dataframes(betha_df, tce_df)
+    betha_metadata = {**betha_metadata, "rows": len(betha_df)}
+    tce_metadata = {**tce_metadata, "rows": len(tce_df)}
 
     return {
         "rows": dataframe_to_records(result),
         "summary": summary_to_json(summary),
         "metadata": {
-            "betha": betha_metadata | {"rows": len(betha_df)},
-            "tce": tce_metadata | {"rows": len(tce_df)},
+            "betha": betha_metadata,
+            "tce": tce_metadata,
         },
     }
 
