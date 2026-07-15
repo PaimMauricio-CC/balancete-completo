@@ -1,6 +1,10 @@
 # Ignorar arquivos CSV de upload
 uploads/*.csv
 
+# Ignorar arquivos locais usados para testes manuais
+Error/
+Informe/
+
 # Ignorar arquivos gerados automaticamente
 data/*.csv
 

@@ -1,406 +1,238 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparativo Balancete</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="theme-color" content="#142b2a">
+    <title>Clara · Conferência contábil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-
 <body>
     {% set current_conferidor = conferidor_type|default('contabil') %}
-    <header class="topbar">
-        <div class="brand-mark">
-            <i class="fas fa-scale-balanced"></i>
-        </div>
-        <div>
-            <strong>Comparativo Balancete</strong>
-            <span>Betha x TCE</span>
-        </div>
-        {% if entity %}
-        <div class="entity-badge">
-            <i class="fas fa-building-columns"></i>
-            <span>{{ entity }}</span>
-        </div>
-        {% endif %}
-    </header>
-
-    <main class="app-shell">
-        {% if alert_message %}
-        <section class="alert-panel">
-            <div class="alert-icon">
-                <i class="fas fa-triangle-exclamation"></i>
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+    <div class="app-frame">
+        <aside class="sidebar" aria-label="Identidade do sistema">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="Clara, início">
+                <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span><strong>Clara</strong><small>conferência pública</small></span>
+            </a>
+            <div class="sidebar-copy">
+                <span class="rail-index">01 — 03</span>
+                <p>Dados públicos<br>conferidos com<br><em>clareza.</em></p>
             </div>
-            <div>
-                <h2>{{ alert_title }}</h2>
-                <p>{{ alert_message }}</p>
-                <span>{{ alert_detail }}</span>
+            <div class="privacy-note">
+                <span class="status-dot" aria-hidden="true"></span>
+                <div><strong>Processamento local</strong><small>Seus arquivos permanecem neste servidor.</small></div>
             </div>
-        </section>
-        {% endif %}
+        </aside>
 
-        <section class="workspace">
-            <form id="upload-form" class="control-panel" method="POST" enctype="multipart/form-data">
-                <div class="panel-header">
-                    <div>
-                        <p class="eyebrow">Conciliação</p>
-                        <h1>Processar balancete</h1>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-play"></i>
-                        Processar
-                    </button>
+        <main id="conteudo" class="main-content">
+            <header class="topline">
+                <div>
+                    <span class="kicker">Central de conferência</span>
+                    <h1>Transforme arquivos em decisões seguras.</h1>
                 </div>
+                {% if entity %}<span class="entity-chip">{{ entity }}</span>{% endif %}
+            </header>
 
-                <div class="conferidor-switch" role="radiogroup" aria-label="Conferidor">
-                    <label>
-                        <input type="radio" name="conferidor_type" value="contabil" {% if current_conferidor != 'folha' %}checked{% endif %}>
-                        <span><i class="fas fa-scale-balanced"></i> Contabil</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="conferidor_type" value="folha" {% if current_conferidor == 'folha' %}checked{% endif %}>
-                        <span><i class="fas fa-file-invoice-dollar"></i> Folha</span>
-                    </label>
-                </div>
-
-                <div class="settings-grid">
-                    <label class="field-block contabil-only" for="license-code">
-                        <span>Licença</span>
-                        <input type="text" class="form-control" id="license-code" name="license_code"
-                            placeholder="KYP12" required>
-                    </label>
-
-                    <label class="field-block contabil-only" for="mode">
-                        <span>Modo</span>
-                        <select id="mode" name="mode" class="form-select">
-                            <option value="analitico">Conta corrente</option>
-                            <option value="sintetico">Geral</option>
-                        </select>
-                    </label>
-
-                    <label class="field-block contabil-only" for="saldo-type">
-                        <span>Saldo</span>
-                        <select class="form-select" id="saldo-type" name="saldo_type" required>
-                            <option value="atual">Atual</option>
-                            <option value="anterior">Anterior</option>
-                        </select>
-                    </label>
-                </div>
-
-                <div class="file-grid">
-                    <label class="upload-card" for="betha-file">
-                        <input type="file" id="betha-file" name="bethaFile" accept=".csv,text/csv" required>
-                        <span class="upload-icon"><i class="fas fa-file-csv"></i></span>
-                        <span class="upload-label">CSV Betha</span>
-                        <span class="file-name" data-default="Nenhum arquivo selecionado">Nenhum arquivo
-                            selecionado</span>
-                    </label>
-
-                    <label class="upload-card" for="tce-file">
-                        <input type="file" id="tce-file" name="tceFile" accept=".csv,text/csv" required>
-                        <span class="upload-icon"><i class="fas fa-file-csv"></i></span>
-                        <span class="upload-label">CSV TCE</span>
-                        <span class="file-name" data-default="Nenhum arquivo selecionado">Nenhum arquivo
-                            selecionado</span>
-                    </label>
-                </div>
-            </form>
-
-            <div id="processing" class="processing-panel d-none">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Processando...</span>
-                </div>
-                <span>Processando arquivos...</span>
-            </div>
-        </section>
-
-        <section id="output" class="results-stack">
-            {% if diferencas_html %}
-            <article class="result-card result-card-danger">
-                <header class="result-card-header" data-bs-toggle="collapse" data-bs-target="#diferencas-resultados">
-                    <div>
-                        <i class="fas fa-triangle-exclamation"></i>
-                        <h2>Diferenças Encontradas</h2>
-                    </div>
-                    <a href="{{ url_for('download', filename=diferencas_file.split('/')[-1]) }}" class="btn btn-danger">
-                        <i class="fas fa-download"></i>
-                        Baixar CSV
-                    </a>
-                </header>
-                <div id="diferencas-resultados" class="collapse show">
-                    {% if has_diferencas %}
-                    <div class="table-responsive">
-                        {{ diferencas_html| safe }}
-                    </div>
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="fas fa-circle-check"></i>
-                        <span>Nenhuma diferença encontrada.</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </article>
-            {% endif %}
-
-            {% if sem_correspondencia_betha_html or sem_correspondencia_tce_html %}
-            <article class="result-card result-card-warning">
-                <header class="result-card-header" data-bs-toggle="collapse"
-                    data-bs-target="#sem-correspondencia-resultados">
-                    <div>
-                        <i class="fas fa-link-slash"></i>
-                        <h2>Sem Correspondência</h2>
-                    </div>
-                </header>
-                <div id="sem-correspondencia-resultados" class="collapse show">
-                    {% if has_sem_corresp_betha or has_sem_corresp_tce %}
-                    {% if has_sem_corresp_betha %}
-                    <h3>Betha</h3>
-                    <div class="table-responsive">
-                        {{ sem_correspondencia_betha_html| safe }}
-                    </div>
-                    {% endif %}
-                    {% if has_sem_corresp_tce %}
-                    <h3>TCE</h3>
-                    <div class="table-responsive">
-                        {{ sem_correspondencia_tce_html| safe }}
-                    </div>
-                    {% endif %}
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="fas fa-circle-check"></i>
-                        <span>Sem resultado encontrado.</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </article>
-            {% endif %}
-
-            {% if summary_cards %}
-            <section class="summary-grid">
-                {% for label, value in summary_cards %}
-                <button type="button" class="summary-item" data-summary-filter="{{ label }}">
-                    <span>{{ label }}</span>
-                    <strong>{{ value }}</strong>
-                </button>
-                {% endfor %}
+            {% if alert_message %}
+            <section class="notice notice-error" role="alert">
+                <span class="notice-mark" aria-hidden="true">!</span>
+                <div><strong>{{ alert_title }}</strong><p>{{ alert_message }}</p><small>{{ alert_detail }}</small></div>
             </section>
             {% endif %}
 
-            {% if comparacao_html %}
-            <article class="result-card">
-                <header class="result-card-header" data-bs-toggle="collapse" data-bs-target="#comparacao-resultados">
-                    <div>
-                        <i class="fas fa-table"></i>
-                        <h2>Resultado da Comparação</h2>
-                    </div>
-                    {% if excel_file %}
-                    <a href="{{ url_for('download', filename=excel_file.split('/')[-1]) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-file-excel"></i>
-                        Baixar XLSX
-                    </a>
-                    {% endif %}
-                    {% if highlighted_excel_file %}
-                    <a href="{{ url_for('download', filename=highlighted_excel_file.split('/')[-1]) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-highlighter"></i>
-                        XLSX destacado
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-download"></i>
-                        Baixar CSV
-                    </a>
-                </header>
-                <div id="comparacao-resultados" class="collapse show">
-                    <div class="table-tools" data-table-tools>
-                        <label class="table-search">
-                            <i class="fas fa-search"></i>
-                            <input type="search" placeholder="Filtrar resultado" data-table-search>
-                        </label>
-                        <button type="button" class="btn btn-outline-secondary" data-table-reset>
-                            <i class="fas fa-rotate-left"></i>
-                            Limpar
-                        </button>
-                        <span class="table-count" data-table-count></span>
-                    </div>
-                    <div class="table-responsive">
-                        {{ comparacao_html| safe }}
-                    </div>
+            <section class="workbench" aria-labelledby="workspace-title">
+                <div class="section-heading">
+                    <div><span class="section-number">01</span><span class="kicker">Escolha a análise</span></div>
+                    <p>Selecione o fluxo e forneça os documentos solicitados.</p>
                 </div>
-            </article>
+
+                <form id="upload-form" method="POST" enctype="multipart/form-data">
+                    <fieldset class="workflow-tabs">
+                        <legend class="visually-hidden">Tipo de conferência</legend>
+                        <label class="workflow-tab">
+                            <input type="radio" name="conferidor_type" value="contabil" {% if current_conferidor == 'contabil' %}checked{% endif %}>
+                            <span class="tab-index">01</span><span><strong>Contábil</strong><small>Betha × TCE</small></span>
+                        </label>
+                        <label class="workflow-tab">
+                            <input type="radio" name="conferidor_type" value="folha" {% if current_conferidor == 'folha' %}checked{% endif %}>
+                            <span class="tab-index">02</span><span><strong>Folha</strong><small>Eventos e valores</small></span>
+                        </label>
+                        <label class="workflow-tab">
+                            <input type="radio" name="conferidor_type" value="informe" {% if current_conferidor == 'informe' %}checked{% endif %}>
+                            <span class="tab-index">03</span><span><strong>Informe</strong><small>XML eSocial</small></span><b class="new-badge">Novo</b>
+                        </label>
+                    </fieldset>
+
+                    <div class="form-body" data-csv-panel>
+                        <div class="settings-grid" data-contabil-fields>
+                            <label class="field-block" for="license-code"><span>Licença</span><input id="license-code" name="license_code" type="text" placeholder="Ex.: KYP12" autocomplete="off"></label>
+                            <label class="field-block" for="mode"><span>Nível de análise</span><select id="mode" name="mode"><option value="analitico">Conta corrente</option><option value="sintetico">Visão geral</option></select></label>
+                            <label class="field-block" for="saldo-type"><span>Saldo de referência</span><select id="saldo-type" name="saldo_type"><option value="atual">Saldo atual</option><option value="anterior">Saldo anterior</option></select></label>
+                        </div>
+                        <div class="file-grid">
+                            <label class="upload-card" for="betha-file">
+                                <input type="file" id="betha-file" name="bethaFile" accept=".csv,text/csv">
+                                <span class="file-type">CSV</span><span><strong>Arquivo Betha</strong><small class="file-name" data-default="Clique ou arraste o arquivo">Clique ou arraste o arquivo</small></span><span class="upload-action">Selecionar</span>
+                            </label>
+                            <label class="upload-card" for="tce-file">
+                                <input type="file" id="tce-file" name="tceFile" accept=".csv,text/csv">
+                                <span class="file-type">CSV</span><span><strong>Arquivo TCE</strong><small class="file-name" data-default="Clique ou arraste o arquivo">Clique ou arraste o arquivo</small></span><span class="upload-action">Selecionar</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-body" data-xml-panel hidden>
+                        <div class="xml-intro">
+                            <div><span class="section-number">XML</span><h2>Consolidar rendimentos</h2></div>
+                            <p>Envie um ou mais eventos de IRRF do mesmo trabalhador. Os meses são identificados e somados automaticamente.</p>
+                        </div>
+                        <label class="xml-dropzone" for="xml-files">
+                            <input type="file" id="xml-files" name="xmlFiles" accept=".xml,text/xml,application/xml" multiple>
+                            <span class="xml-glyph" aria-hidden="true">&lt;/&gt;</span>
+                            <span><strong>Solte seus XMLs eSocial aqui</strong><small class="file-name" data-default="ou clique para procurar · até 24 arquivos">ou clique para procurar · até 24 arquivos</small></span>
+                            <span class="upload-action">Procurar arquivos</span>
+                        </label>
+                    </div>
+
+                    <footer class="form-footer">
+                        <span><i class="status-dot" aria-hidden="true"></i> Os arquivos são validados antes do processamento.</span>
+                        <button type="submit" class="primary-action"><span data-submit-label>Iniciar conferência</span><b aria-hidden="true">→</b></button>
+                    </footer>
+                </form>
+                <div id="processing" class="processing-panel" hidden aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Processando os dados com segurança…</span></div>
+            </section>
+
+            {% if income_report %}
+            <section class="report-section" aria-labelledby="report-title">
+                <div class="section-heading result-heading"><div><span class="section-number">02</span><span class="kicker">Resultado consolidado</span></div><p>{{ income_report.source_count }} arquivo(s) processado(s)</p></div>
+                <article class="income-report">
+                    <header class="report-header"><div><span class="document-icon" aria-hidden="true">≡</span><div><span class="kicker">Dados consolidados</span><h2 id="report-title">Informe de rendimentos</h2></div></div><span class="verified-badge"><i></i> XML validado</span></header>
+                    <div class="identity-grid">
+                        <section><span class="identity-label">Trabalhador</span><strong>Beneficiário</strong><small>CPF · {{ income_report.worker_cpf_formatted }}</small></section>
+                        <section><span class="identity-label">Empregador</span><strong>Empregador eSocial</strong><small>{{ income_report.employer_registration_formatted }}</small></section>
+                    </div>
+                    <div class="months-block">
+                        <div class="block-title"><span>Rendimentos por mês</span><small>{{ income_report.months|length }} competências</small></div>
+                        <div class="month-grid">
+                            {% for month in income_report.months %}
+                            <div class="month-card"><span>{{ month.period_label }}</span><strong>{{ month.taxable_income|brl }}</strong></div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="totals-grid">
+                        <div><span>Rendimentos</span><strong>{{ income_report.totals.taxable_income|brl }}</strong></div>
+                        <div><span>INSS</span><strong>{{ income_report.totals.inss|brl }}</strong></div>
+                        <div class="total-highlight"><span>IRRF</span><strong>{{ income_report.totals.irrf|brl }}</strong></div>
+                        <div><span>13º salário</span><strong>{{ income_report.totals.thirteenth_salary|brl }}</strong></div>
+                    </div>
+                </article>
+            </section>
             {% endif %}
-        </section>
-    </main>
+
+            {% if diferencas_html or sem_correspondencia_betha_html or sem_correspondencia_tce_html or summary_cards or comparacao_html %}
+            <section id="output" class="results-stack">
+                <div class="section-heading result-heading"><div><span class="section-number">02</span><span class="kicker">Resultado da conferência</span></div><p>Explore, filtre e exporte os dados encontrados.</p></div>
+                {% if summary_cards %}<div class="summary-grid">{% for label, value in summary_cards %}<button type="button" class="summary-item" data-summary-filter="{{ label }}"><span>{{ label }}</span><strong>{{ value }}</strong></button>{% endfor %}</div>{% endif %}
+
+                {% if diferencas_html %}
+                <article class="result-card result-danger"><header class="result-card-header"><button type="button" class="collapse-trigger" data-collapse-target="#diferencas-resultados" aria-expanded="true"><span>Diferenças encontradas</span><b>−</b></button><a href="{{ url_for('download', filename=diferencas_file.split('/')[-1]) }}" class="secondary-action">Baixar CSV</a></header><div id="diferencas-resultados" class="collapse-content">{% if has_diferencas %}<div class="table-responsive">{{ diferencas_html|safe }}</div>{% else %}<div class="empty-state">✓ Nenhuma diferença encontrada.</div>{% endif %}</div></article>
+                {% endif %}
+
+                {% if sem_correspondencia_betha_html or sem_correspondencia_tce_html %}
+                <article class="result-card result-warning"><header class="result-card-header"><button type="button" class="collapse-trigger" data-collapse-target="#sem-correspondencia-resultados" aria-expanded="true"><span>Itens sem correspondência</span><b>−</b></button></header><div id="sem-correspondencia-resultados" class="collapse-content">{% if has_sem_corresp_betha %}<h3>Betha</h3><div class="table-responsive">{{ sem_correspondencia_betha_html|safe }}</div>{% endif %}{% if has_sem_corresp_tce %}<h3>TCE</h3><div class="table-responsive">{{ sem_correspondencia_tce_html|safe }}</div>{% endif %}{% if not has_sem_corresp_betha and not has_sem_corresp_tce %}<div class="empty-state">✓ Nenhum item sem correspondência.</div>{% endif %}</div></article>
+                {% endif %}
+
+                {% if comparacao_html %}
+                <article class="result-card"><header class="result-card-header"><button type="button" class="collapse-trigger" data-collapse-target="#comparacao-resultados" aria-expanded="true"><span>{{ result_title|default('Resultado da comparação') }}</span><b>−</b></button><div class="download-group">{% if excel_file %}<a href="{{ url_for('download', filename=excel_file.split('/')[-1]) }}" class="secondary-action">XLSX</a>{% endif %}{% if highlighted_excel_file %}<a href="{{ url_for('download', filename=highlighted_excel_file.split('/')[-1]) }}" class="secondary-action">XLSX destacado</a>{% endif %}<a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="secondary-action">CSV</a></div></header><div id="comparacao-resultados" class="collapse-content"><div class="table-tools" data-table-tools><label class="table-search"><span>⌕</span><input type="search" placeholder="Filtrar linhas" data-table-search></label><button type="button" class="text-action" data-table-reset>Limpar filtro</button><span class="table-count" data-table-count></span></div><div class="table-responsive">{{ comparacao_html|safe }}</div></div></article>
+                {% endif %}
+            </section>
+            {% endif %}
+            <footer class="page-footer"><span>Clara · conferência de dados públicos</span><span>Feito para rotinas que exigem precisão.</span></footer>
+        </main>
+    </div>
 
     <script>
-        document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(header => {
-            header.addEventListener('click', event => {
-                if (event.target.closest('a')) {
-                    return;
-                }
-                const targetElement = document.querySelector(header.getAttribute('data-bs-target'));
-                targetElement.classList.toggle('show');
-            });
-        });
-
-        document.querySelectorAll('.upload-card input[type="file"]').forEach(input => {
-            input.addEventListener('change', () => {
-                const fileName = input.files.length ? input.files[0].name : input.closest('.upload-card').querySelector('.file-name').dataset.default;
-                input.closest('.upload-card').querySelector('.file-name').textContent = fileName;
-            });
-        });
-
-        const conferidorInputs = document.querySelectorAll('input[name="conferidor_type"]');
-        const contabilFields = document.querySelectorAll('.contabil-only');
+        const workflowInputs = [...document.querySelectorAll('input[name="conferidor_type"]')];
+        const csvPanel = document.querySelector('[data-csv-panel]');
+        const xmlPanel = document.querySelector('[data-xml-panel]');
+        const contabilFields = document.querySelector('[data-contabil-fields]');
         const licenseInput = document.getElementById('license-code');
-        const updateConferidor = () => {
+        const csvInputs = [document.getElementById('betha-file'), document.getElementById('tce-file')];
+        const xmlInput = document.getElementById('xml-files');
+        const submitLabel = document.querySelector('[data-submit-label]');
+
+        const updateWorkflow = () => {
             const selected = document.querySelector('input[name="conferidor_type"]:checked').value;
-            const isFolha = selected === 'folha';
-            contabilFields.forEach(field => {
-                field.classList.toggle('d-none', isFolha);
-                field.querySelectorAll('input, select').forEach(control => {
-                    control.disabled = isFolha;
-                });
-            });
-            licenseInput.required = !isFolha;
+            const isInforme = selected === 'informe';
+            const isContabil = selected === 'contabil';
+            csvPanel.hidden = isInforme;
+            xmlPanel.hidden = !isInforme;
+            contabilFields.hidden = !isContabil;
+            csvInputs.forEach(input => { input.disabled = isInforme; input.required = !isInforme; });
+            xmlInput.disabled = !isInforme;
+            xmlInput.required = isInforme;
+            [...contabilFields.querySelectorAll('input, select')].forEach(input => { input.disabled = !isContabil; });
+            licenseInput.required = isContabil;
+            submitLabel.textContent = isInforme ? 'Consolidar informe' : 'Iniciar conferência';
         };
-        conferidorInputs.forEach(input => input.addEventListener('change', updateConferidor));
-        updateConferidor();
+        workflowInputs.forEach(input => input.addEventListener('change', updateWorkflow));
+        updateWorkflow();
+
+        document.querySelectorAll('input[type="file"]').forEach(input => input.addEventListener('change', () => {
+            const label = input.closest('label').querySelector('.file-name');
+            if (!input.files.length) label.textContent = label.dataset.default;
+            else if (input.files.length === 1) label.textContent = input.files[0].name;
+            else label.textContent = `${input.files.length} arquivos selecionados`;
+        }));
+
+        document.getElementById('upload-form').addEventListener('submit', () => {
+            document.getElementById('processing').hidden = false;
+        });
+
+        document.querySelectorAll('[data-collapse-target]').forEach(button => button.addEventListener('click', () => {
+            const target = document.querySelector(button.dataset.collapseTarget);
+            const expanded = button.getAttribute('aria-expanded') === 'true';
+            target.hidden = expanded;
+            button.setAttribute('aria-expanded', String(!expanded));
+            button.querySelector('b').textContent = expanded ? '+' : '−';
+        }));
 
         document.querySelectorAll('.result-card').forEach(card => {
             const table = card.querySelector('table');
             const tools = card.querySelector('[data-table-tools]');
-            if (!table || !tools) {
-                return;
-            }
-
+            if (!table || !tools || !table.tBodies.length) return;
             const tbody = table.tBodies[0];
-            const rows = Array.from(tbody.rows);
-            const headers = Array.from(table.tHead?.rows[0]?.cells || []);
+            const rows = [...tbody.rows];
+            const headers = [...(table.tHead?.rows[0]?.cells || [])];
             const searchInput = tools.querySelector('[data-table-search]');
             const countLabel = tools.querySelector('[data-table-count]');
-            const resetButton = tools.querySelector('[data-table-reset]');
-            const summaryButtons = Array.from(document.querySelectorAll('[data-summary-filter]'));
-            const state = { search: '', status: '', sortIndex: null, sortDirection: 1 };
-
+            const summaryButtons = [...document.querySelectorAll('[data-summary-filter]')];
             const normalize = value => value.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-            const parseNumber = value => {
-                const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
-                return cleaned && !Number.isNaN(Number(cleaned)) ? Number(cleaned) : null;
-            };
-            const getCellText = (row, index) => row.cells[index]?.textContent.trim() || '';
+            const getText = (row, index) => row.cells[index]?.textContent.trim() || '';
             const statusIndex = headers.findIndex(header => normalize(header.textContent).includes('STATUS'));
-            const availableStatuses = statusIndex >= 0
-                ? Array.from(new Set(rows.map(row => getCellText(row, statusIndex)).filter(Boolean)))
-                : [];
-            const statusForSummary = label => {
-                const normalizedLabel = normalize(label);
-                if (normalizedLabel === 'OK') {
-                    return availableStatuses.find(status => normalize(status) === 'OK') || '';
-                }
-                if (normalizedLabel.includes('DIVERG')) {
-                    return availableStatuses.find(status => normalize(status).includes('DIVERG')) || '';
-                }
-                if (normalizedLabel.includes('NAO ENCONTR')) {
-                    return availableStatuses.find(status => normalize(status).includes('NAO ENCONTR')) || '';
-                }
-                if (normalizedLabel.includes('SOBRA')) {
-                    return availableStatuses.find(status => normalize(status).includes('SOBRA')) || '';
-                }
-                return '';
+            const statuses = statusIndex >= 0 ? [...new Set(rows.map(row => getText(row, statusIndex)).filter(Boolean))] : [];
+            const state = { search: '', status: '', sortIndex: null, direction: 1 };
+            const statusFor = label => statuses.find(status => {
+                const a = normalize(label), b = normalize(status);
+                return (a === 'OK' && b === 'OK') || (a.includes('DIVERG') && b.includes('DIVERG')) || (a.includes('NAO ENCONTR') && b.includes('NAO ENCONTR')) || (a.includes('SOBRA') && b.includes('SOBRA'));
+            }) || '';
+            const apply = () => {
+                let visible = 0;
+                rows.forEach(row => { const show = (!state.search || normalize(row.textContent).includes(normalize(state.search))) && (!state.status || getText(row, statusIndex) === state.status); row.hidden = !show; if (show) visible++; });
+                summaryButtons.forEach(button => button.classList.toggle('is-active', !!state.status && button.dataset.statusValue === state.status));
+                countLabel.textContent = `${visible} de ${rows.length} linhas`;
             };
-
-            const applyTableState = () => {
-                const search = normalize(state.search);
-                let visibleCount = 0;
-                rows.forEach(row => {
-                    const rowText = normalize(row.textContent);
-                    const rowStatus = statusIndex >= 0 ? getCellText(row, statusIndex) : '';
-                    const matchesSearch = !search || rowText.includes(search);
-                    const matchesStatus = !state.status || rowStatus === state.status;
-                    const visible = matchesSearch && matchesStatus;
-                    row.classList.toggle('d-none', !visible);
-                    if (visible) {
-                        visibleCount += 1;
-                    }
-                });
-                summaryButtons.forEach(button => {
-                    button.classList.toggle('summary-item-active', !!state.status && button.dataset.statusValue === state.status);
-                });
-                countLabel.textContent = `${visibleCount} de ${rows.length} linhas`;
-            };
-
-            summaryButtons.forEach(button => {
-                const status = statusForSummary(button.dataset.summaryFilter || '');
-                if (!status) {
-                    button.disabled = true;
-                    return;
-                }
-                button.dataset.statusValue = status;
-                button.addEventListener('click', () => {
-                    state.status = state.status === status ? '' : status;
-                    applyTableState();
-                });
-            });
-
-            headers.forEach((header, index) => {
-                header.tabIndex = 0;
-                header.setAttribute('role', 'button');
-                header.setAttribute('aria-sort', 'none');
-                header.classList.add('sortable-column');
-                const sortRows = () => {
-                    if (state.sortIndex === index) {
-                        state.sortDirection *= -1;
-                    } else {
-                        state.sortIndex = index;
-                        state.sortDirection = 1;
-                    }
-                    headers.forEach(item => item.setAttribute('aria-sort', 'none'));
-                    header.setAttribute('aria-sort', state.sortDirection === 1 ? 'ascending' : 'descending');
-                    rows.sort((a, b) => {
-                        const aText = getCellText(a, index);
-                        const bText = getCellText(b, index);
-                        const aNumber = parseNumber(aText);
-                        const bNumber = parseNumber(bText);
-                        const comparison = aNumber !== null && bNumber !== null
-                            ? aNumber - bNumber
-                            : aText.localeCompare(bText, 'pt-BR', { sensitivity: 'base', numeric: true });
-                        return comparison * state.sortDirection;
-                    });
-                    rows.forEach(row => tbody.appendChild(row));
-                    applyTableState();
-                };
-                header.addEventListener('click', sortRows);
-                header.addEventListener('keydown', event => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        sortRows();
-                    }
-                });
-            });
-
-            searchInput.addEventListener('input', () => {
-                state.search = searchInput.value;
-                applyTableState();
-            });
-            resetButton.addEventListener('click', () => {
-                state.search = '';
-                state.status = '';
-                searchInput.value = '';
-                applyTableState();
-            });
-            applyTableState();
-        });
-
-        document.getElementById('upload-form').addEventListener('submit', () => {
-            document.getElementById('processing').classList.remove('d-none');
+            summaryButtons.forEach(button => { const status = statusFor(button.dataset.summaryFilter); if (!status) { button.disabled = true; return; } button.dataset.statusValue = status; button.addEventListener('click', () => { state.status = state.status === status ? '' : status; apply(); }); });
+            headers.forEach((header, index) => { header.tabIndex = 0; header.classList.add('sortable-column'); header.setAttribute('aria-sort', 'none'); const sort = () => { state.direction = state.sortIndex === index ? -state.direction : 1; state.sortIndex = index; headers.forEach(item => item.setAttribute('aria-sort', 'none')); header.setAttribute('aria-sort', state.direction > 0 ? 'ascending' : 'descending'); rows.sort((a, b) => getText(a, index).localeCompare(getText(b, index), 'pt-BR', {numeric: true}) * state.direction).forEach(row => tbody.appendChild(row)); apply(); }; header.addEventListener('click', sort); header.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sort(); } }); });
+            searchInput.addEventListener('input', () => { state.search = searchInput.value; apply(); });
+            tools.querySelector('[data-table-reset]').addEventListener('click', () => { state.search = ''; state.status = ''; searchInput.value = ''; apply(); });
+            apply();
         });
     </script>
 </body>
-
 </html>

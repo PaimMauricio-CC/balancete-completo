@@ -7,6 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.exceptions import RequestEntityTooLarge
 import main
 import conferidor_folha
+from services.esocial import ESocialError, parse_income_report
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -36,7 +37,9 @@ class LicenseError(UserFacingError):
 
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv"}
+ALLOWED_XML_EXTENSIONS = {".xml"}
 ALLOWED_DOWNLOAD_EXTENSIONS = {".csv", ".xlsx"}
+MAX_XML_FILES = 24
 
 
 def normalize_text(value):
@@ -105,6 +108,34 @@ def render_alert(message, title="Não foi possível processar os arquivos", deta
         ),
     )
 
+@app.template_filter("brl")
+def format_brl(value):
+    number = float(value or 0)
+    formatted = f"{number:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+    return f"R$ {formatted}"
+
+
+def process_income_report(xml_files):
+    selected_files = [file for file in xml_files if file and file.filename]
+    if not selected_files:
+        raise ESocialError("Selecione ao menos um XML eSocial.")
+    if len(selected_files) > MAX_XML_FILES:
+        raise ESocialError(f"Envie no máximo {MAX_XML_FILES} arquivos XML por vez.")
+
+    payloads = []
+    for xml_file in selected_files:
+        if not has_allowed_extension(xml_file.filename, ALLOWED_XML_EXTENSIONS):
+            raise ESocialError(f"{xml_file.filename}: o arquivo deve estar no formato XML.")
+        payloads.append((xml_file.filename, xml_file.read()))
+
+    report = parse_income_report(payloads)
+    return render_template(
+        "index.html",
+        conferidor_type="informe",
+        income_report=report,
+    )
+
+
 def normalize_folha_result_columns(df):
     df = df.copy()
     if "Tipo" not in df.columns and "Tipo Betha" in df.columns:
@@ -157,10 +188,22 @@ def process_folha(betha_path, tce_path):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
+        conferidor_type = request.form.get("conferidor_type", "contabil")
+        if conferidor_type == "informe":
+            try:
+                return process_income_report(request.files.getlist("xmlFiles"))
+            except ESocialError as error:
+                return render_template(
+                    "index.html",
+                    conferidor_type="informe",
+                    alert_title="Não foi possível consolidar o informe",
+                    alert_message=str(error),
+                    alert_detail="Use XMLs eSocial de IRRF do mesmo trabalhador e empregador.",
+                )
+
         # Obter arquivos enviados pelo usuário
         betha_file = request.files.get("bethaFile")
         tce_file = request.files.get("tceFile")
-        conferidor_type = request.form.get("conferidor_type", "contabil")
         mode = request.form.get("mode")
         saldo_type = request.form.get("saldo_type", "atual")  # Capturar o tipo de saldo selecionado (padrão: "atual")
         license_code = request.form.get("license_code", "")
