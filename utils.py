@@ -203,15 +203,15 @@ def extrair_conta_corrente(descricao):
                 ano = partes[0]           # Ex: "2023"
                 numero = partes[1]        # Ex: "Nº03/2023"
                 cnpj = partes[2]          # Ex: "42499226000129"
-                codigo1 = partes[3]       # Ex: "10"
-                codigo2 = partes[4]       # Ex: "301"
-                codigo3 = partes[5][:4]   # Ex: "3171" (primeiros 4 caracteres) ELEMENTO DA DESPESA
+                codigo1 = partes[3].zfill(2)
+                codigo2 = partes[4].zfill(3)
+                codigo3 = partes[5].zfill(6)
                 destino = partes[6]   # Concatena "15001002"
                 if len(numero) == 10:
-                    consorcio_formatado = f"{ano}{numero}{' ' * 6}{cnpj}{codigo1}{codigo2}{codigo3}{'00'}{destino}"
+                    consorcio_formatado = f"{ano}{numero}{' ' * 6}{cnpj}{codigo1}{codigo2}{codigo3}{destino}"
                 else:    
                 # Monta o padrão TCE
-                    consorcio_formatado = f"{ano}{numero}{' ' * 7}{cnpj}{codigo1}{codigo2}{codigo3}{'00'}{destino}"
+                    consorcio_formatado = f"{ano}{numero}{' ' * 7}{cnpj}{codigo1}{codigo2}{codigo3}{destino}"
                 return consorcio_formatado
         except Exception:
             return descricao  # Retorna a descrição original em caso de erro
@@ -407,13 +407,7 @@ def normalizar_conta_corrente_comparacao(conta):
     if pd.isna(conta):
         return None
 
-    conta = str(conta).rstrip()
-    conta_bancaria = re.match(r"^(\d{10})\s+(.+)$", conta)
-    if conta_bancaria:
-        prefixo = conta_bancaria.group(1)
-        restante = conta_bancaria.group(2).strip()
-        restante = re.sub(r"^0+(?=[0-9X])", "", restante)
-        return f"{prefixo} {restante}"
+    conta = str(conta).strip()
 
     partes = conta.split()
     if len(partes) == 8 and all(re.fullmatch(r"\d+", parte) for parte in partes):
@@ -424,12 +418,20 @@ def normalizar_conta_corrente_comparacao(conta):
     # diferentes. Nesses casos os espacos sao apenas preenchimento.
     if (
         re.match(r"^\d{4}.*\/", conta)
+        or re.match(r"^\d{4,6}\s+\d{15,}$", conta)
         or re.match(r"^\d{6}\s+", conta)
         or re.match(r"^\d{6}.*\s+\d{14}$", conta)
     ):
         conta_sem_espacos = re.sub(r"\s+", "", conta)
         if re.search(r"\d{4}", conta_sem_espacos):
             return conta_sem_espacos
+
+    conta_bancaria = re.match(r"^(\d{10})\s+(.+)$", conta)
+    if conta_bancaria:
+        prefixo = conta_bancaria.group(1)
+        restante = conta_bancaria.group(2).strip()
+        restante = re.sub(r"^0+(?=[0-9X])", "", restante)
+        return f"{prefixo} {restante}"
 
     if re.fullmatch(r"\d+", conta):
         if len(conta) <= 12:
