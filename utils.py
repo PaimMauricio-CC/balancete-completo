@@ -420,6 +420,17 @@ def normalizar_conta_corrente_comparacao(conta):
         orgao, acao, natureza, recurso, tipo, ano, licitacao, item = partes
         return f"{orgao}0{formatar_mascara(acao)}{natureza}{recurso}{tipo}{ano}{licitacao}{item}"
 
+    # Betha e TCE podem quebrar campos de contratos/dividas em posicoes
+    # diferentes. Nesses casos os espacos sao apenas preenchimento.
+    if (
+        re.match(r"^\d{4}.*\/", conta)
+        or re.match(r"^\d{6}\s+", conta)
+        or re.match(r"^\d{6}.*\s+\d{14}$", conta)
+    ):
+        conta_sem_espacos = re.sub(r"\s+", "", conta)
+        if re.search(r"\d{4}", conta_sem_espacos):
+            return conta_sem_espacos
+
     if re.fullmatch(r"\d+", conta):
         if len(conta) <= 12:
             return conta.lstrip("0") or "0"
