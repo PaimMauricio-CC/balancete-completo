@@ -8,6 +8,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import main
 import conferidor_folha
 from services.esocial import ESocialError, parse_income_report
+from services.pdf_report import build_audit_pdf, build_esocial_pdf, format_brl as pdf_brl
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -38,7 +39,7 @@ class LicenseError(UserFacingError):
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv"}
 ALLOWED_XML_EXTENSIONS = {".xml"}
-ALLOWED_DOWNLOAD_EXTENSIONS = {".csv", ".xlsx"}
+ALLOWED_DOWNLOAD_EXTENSIONS = {".csv", ".xlsx", ".pdf"}
 MAX_XML_FILES = 24
 
 
@@ -129,11 +130,35 @@ def process_income_report(xml_files):
         payloads.append((xml_file.filename, xml_file.read()))
 
     report = parse_income_report(payloads)
+    pdf_filename = "Relatorio_eSocial.pdf"
+    (DATA_DIR / pdf_filename).write_bytes(build_esocial_pdf(report))
     return render_template(
         "index.html",
-        conferidor_type="informe",
+        conferidor_type="esocial",
         income_report=report,
+        pdf_file=f"data/{pdf_filename}",
     )
+
+
+def create_comparison_pdf(mode, saldo_type, entity, comparison, differences, unmatched_betha, unmatched_tce):
+    mode_label = "Analítica" if mode == "analitico" else "Sintética"
+    pdf_filename = f"Relatorio_Contabil_{mode}_{saldo_type}.pdf"
+    metrics = [
+        ("Conciliações", len(comparison)),
+        ("Divergências", len(differences)),
+        ("Somente Betha", len(unmatched_betha)),
+        ("Somente TCE", len(unmatched_tce)),
+    ]
+    content = build_audit_pdf(
+        title=f"Conferência contábil {mode_label.lower()}",
+        subtitle=f"{entity}  |  Saldo {saldo_type}  |  Betha x TCE",
+        metrics=metrics,
+        chart_items=metrics,
+        chart_title="Distribuição dos resultados",
+        observations="Itens em 'Somente Betha' e 'Somente TCE' não encontraram uma chave correspondente na outra fonte. Saldos zerados também são apresentados para garantir uma auditoria completa.",
+    )
+    (DATA_DIR / pdf_filename).write_bytes(content)
+    return f"data/{pdf_filename}"
 
 
 def normalize_folha_result_columns(df):
@@ -173,6 +198,27 @@ def process_folha(betha_path, tce_path):
         ("Sobras TCE", summary.get("sobraTce", 0)),
     ]
 
+    pdf_filename = "Relatorio_Conferencia_Folha.pdf"
+    chart_items = [
+        ("OK", summary.get("ok", 0)),
+        ("Divergentes", summary.get("divergente", 0)),
+        ("Não encontrados", summary.get("naoEncontrado", 0)),
+        ("Sobras TCE", summary.get("sobraTce", 0)),
+    ]
+    (DATA_DIR / pdf_filename).write_bytes(build_audit_pdf(
+        title="Conferência da folha",
+        subtitle="Resumo da comparação de eventos e valores entre Betha e TCE",
+        metrics=[
+            ("Total Betha", pdf_brl(summary.get("totalBetha", 0))),
+            ("Total TCE", pdf_brl(summary.get("totalTce", 0))),
+            ("Diferença", pdf_brl(summary.get("diferencaTotal", 0))),
+            ("Linhas", len(rows)),
+        ],
+        chart_items=chart_items,
+        chart_title="Situação dos registros",
+        observations="O relatório resume os registros conciliados, divergentes, não encontrados e excedentes na fonte TCE.",
+    ))
+
     return render_template(
         "index.html",
         conferidor_type="folha",
@@ -180,6 +226,7 @@ def process_folha(betha_path, tce_path):
         comparacao_file=f"data/{csv_filename}",
         excel_file=f"data/{xlsx_filename}",
         highlighted_excel_file=f"data/{highlighted_xlsx_filename}",
+        pdf_file=f"data/{pdf_filename}",
         result_title="Resultado da Conferencia",
         summary_cards=summary_cards,
     )
@@ -189,13 +236,13 @@ def process_folha(betha_path, tce_path):
 def index():
     if request.method == "POST":
         conferidor_type = request.form.get("conferidor_type", "contabil")
-        if conferidor_type == "informe":
+        if conferidor_type in {"esocial", "informe"}:
             try:
                 return process_income_report(request.files.getlist("xmlFiles"))
             except ESocialError as error:
                 return render_template(
                     "index.html",
-                    conferidor_type="informe",
+                    conferidor_type="esocial",
                     alert_title="Não foi possível consolidar o informe",
                     alert_message=str(error),
                     alert_detail="Use XMLs eSocial de IRRF do mesmo trabalhador e empregador.",
@@ -248,6 +295,10 @@ def index():
                 sem_corresp_tce_html = df_sem_corresp_tce.to_html(classes="table table-striped", index=False)
                 comparacao_html = df_comparacao.to_html(classes="table table-striped", index=False)
                 diferencas_html = df_diferencas.to_html(classes="table table-striped", index=False)
+                pdf_file = create_comparison_pdf(
+                    mode, saldo_type, entity, df_comparacao, df_diferencas,
+                    df_sem_corresp_betha, df_sem_corresp_tce,
+                )
 
                 saldo_label = saldo_type.capitalize()
 
@@ -265,6 +316,7 @@ def index():
                     sem_corresp_betha_file=f"data/Mascaras_Sem_Correspondencia_Betha_Analitico_Saldo_{saldo_label}.csv",
                     sem_corresp_tce_file=f"data/Mascaras_Sem_Correspondencia_TCE_Analitico_Saldo_{saldo_label}.csv",
                     entity=entity,
+                    pdf_file=pdf_file,
                 )
                 
             elif mode == "sintetico":
@@ -280,6 +332,10 @@ def index():
                     diferencas_html = df_diferencas.to_html(classes="table table-striped", index=False)
                     sem_corresp_betha_html = df_sem_corresp_betha.to_html(classes="table table-striped", index=False)
                     sem_corresp_tce_html = df_sem_corresp_tce.to_html(classes="table table-striped", index=False)
+                    pdf_file = create_comparison_pdf(
+                        mode, saldo_type, entity, df_comparacao, df_diferencas,
+                        df_sem_corresp_betha, df_sem_corresp_tce,
+                    )
 
                     saldo_label = saldo_type.capitalize()
 
@@ -297,6 +353,7 @@ def index():
                         sem_corresp_betha_file=f"data/Mascaras_Sem_Correspondencia_Betha_Sintetico_Saldo_{saldo_label}.csv",
                         sem_corresp_tce_file=f"data/Mascaras_Sem_Correspondencia_TCE_Sintetico_Saldo_{saldo_label}.csv",
                         entity=entity,
+                        pdf_file=pdf_file,
                     )
                 return render_alert("Erro ao processar no modo sintético.")
             else:

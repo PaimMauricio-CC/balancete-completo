@@ -4,6 +4,30 @@ import logging
 import re
 import chardet
 from utils import normalizar_mascara, extrair_conta_corrente, limpar_saldo, corrigir_tipo, normalizar_conta_tce, converter_notacao_cientifica,remover_sinal_negativo, ajustar_saldo, normalizar_conta_corrente_comparacao
+
+
+def find_unmatched_records(df_betha, df_tce):
+    """Return every unmatched account key from both sources, including zero balances."""
+    keys = ['Máscara Normalizada', 'Conta Corrente']
+    df_outer = pd.merge(
+        df_betha,
+        df_tce,
+        how='outer',
+        on=keys,
+        indicator=True,
+        suffixes=('_betha', '_tce'),
+    )
+    betha = df_outer.loc[
+        df_outer['_merge'] == 'left_only',
+        keys + ['Saldo_atual_Betha'],
+    ].reset_index(drop=True)
+    tce = df_outer.loc[
+        df_outer['_merge'] == 'right_only',
+        keys + ['Saldo_atual_TCE'],
+    ].reset_index(drop=True)
+    return betha, tce
+
+
 # Processamento Analítico
 def process_analitico(saldo_type="atual"):
     print(f"Iniciando processamento no modo Analítico com Saldo {saldo_type.capitalize()}...")
@@ -165,36 +189,10 @@ def process_analitico(saldo_type="atual"):
     df_comparacao.to_csv(f'data/Comparacao_Betha_TCE_Saldo_{saldo_type.capitalize()}.csv', index=False, encoding='utf-8')
     df_diferencas.to_csv(f'data/Diferencas_Betha_TCE_Saldo_{saldo_type.capitalize()}.csv', index=False, encoding='utf-8')
 
-    # Realizar merge considerando ambas as colunas
-    df_outer = pd.merge(
+    df_sem_correspondencia_betha, df_sem_correspondencia_tce = find_unmatched_records(
         df_betha_tratado,
         df_tce_tratado,
-        how='outer',
-        left_on=['Máscara Normalizada', 'Conta Corrente'],  # Chave composta
-        right_on=['Máscara Normalizada', 'Conta Corrente'],  # Chave composta
-        indicator=True,
-        suffixes=('_betha', '_tce')
     )
-
-    # Para registros exclusivos do Betha (ignorando saldos iguais a 0)
-    df_sem_correspondencia_betha = df_outer[
-        (df_outer['_merge'] == 'left_only') & 
-        (df_outer['Saldo_atual_Betha'] != 0)  # Ignora saldos iguais a 0
-    ][[
-        'Máscara Normalizada', 
-        'Conta Corrente', 
-        'Saldo_atual_Betha'
-    ]]
-
-    # Para registros exclusivos do TCE (ignorando saldos iguais a 0)
-    df_sem_correspondencia_tce = df_outer[
-        (df_outer['_merge'] == 'right_only') & 
-        (df_outer['Saldo_atual_TCE'] != 0)  # Ignora saldos iguais a 0
-    ][[
-        'Máscara Normalizada', 
-        'Conta Corrente', 
-        'Saldo_atual_TCE'
-    ]]
 
     # Salvar os resultados filtrados
     df_sem_correspondencia_betha.to_csv(
@@ -325,35 +323,10 @@ def process_sintetico(saldo_type="atual"):
             df_comparacao.to_csv(f'data/Comparacao_Betha_TCE_Sintetico_Saldo_{saldo_type.capitalize()}.csv', index=False, encoding='utf-8')
             df_diferencas.to_csv(f'data/Diferencas_Betha_TCE_Sintetico_Saldo_{saldo_type.capitalize()}.csv', index=False, encoding='utf-8')
 
-            # Identificar máscaras sem correspondência
-            df_outer = pd.merge(
+            df_sem_correspondencia_betha, df_sem_correspondencia_tce = find_unmatched_records(
                 df_betha_tratado,
                 df_tce_tratado,
-                how='outer',
-                on=['Máscara Normalizada', 'Conta Corrente'],  # Chave composta
-                indicator=True,
-                suffixes=('_betha', '_tce')
             )
-
-            # Para registros exclusivos do Betha (ignorando saldos iguais a 0)
-            df_sem_correspondencia_betha = df_outer[
-                (df_outer['_merge'] == 'left_only') & 
-                (df_outer['Saldo_atual_Betha'] != 0)  # Ignora saldos iguais a 0
-            ][[
-                'Máscara Normalizada', 
-                'Conta Corrente', 
-                'Saldo_atual_Betha'
-            ]]
-
-            # Para registros exclusivos do TCE (ignorando saldos iguais a 0)
-            df_sem_correspondencia_tce = df_outer[
-                (df_outer['_merge'] == 'right_only') & 
-                (df_outer['Saldo_atual_TCE'] != 0)  # Ignora saldos iguais a 0
-            ][[
-                'Máscara Normalizada', 
-                'Conta Corrente', 
-                'Saldo_atual_TCE'
-            ]]
 
             # Salvar os resultados filtrados
             df_sem_correspondencia_betha.to_csv(

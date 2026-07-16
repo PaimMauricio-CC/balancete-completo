@@ -19,10 +19,21 @@
                 <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
                 <span><strong>Clara</strong><small>conferência pública</small></span>
             </a>
-            <div class="sidebar-copy">
-                <span class="rail-index">01 — 03</span>
-                <p>Dados públicos<br>conferidos com<br><em>clareza.</em></p>
-            </div>
+            <nav class="section-nav" aria-label="Seções de auditoria">
+                <span class="nav-label">Seções</span>
+                <label class="section-link">
+                    <input form="upload-form" type="radio" name="conferidor_type" value="contabil" {% if current_conferidor == 'contabil' %}checked{% endif %}>
+                    <span class="nav-index">01</span><span><strong>Contábil</strong><small>Auditorias contábeis</small></span><b aria-hidden="true">→</b>
+                </label>
+                <label class="section-link">
+                    <input form="upload-form" type="radio" name="conferidor_type" value="folha" {% if current_conferidor == 'folha' %}checked{% endif %}>
+                    <span class="nav-index">02</span><span><strong>Folha</strong><small>Auditorias da folha</small></span><b aria-hidden="true">→</b>
+                </label>
+                <label class="section-link">
+                    <input form="upload-form" type="radio" name="conferidor_type" value="esocial" {% if current_conferidor in ['esocial', 'informe'] %}checked{% endif %}>
+                    <span class="nav-index">03</span><span><strong>eSocial</strong><small>Eventos e informes</small></span><b aria-hidden="true">→</b>
+                </label>
+            </nav>
             <div class="privacy-note">
                 <span class="status-dot" aria-hidden="true"></span>
                 <div><strong>Processamento local</strong><small>Seus arquivos permanecem neste servidor.</small></div>
@@ -32,8 +43,9 @@
         <main id="conteudo" class="main-content">
             <header class="topline">
                 <div>
-                    <span class="kicker">Central de conferência</span>
-                    <h1>Transforme arquivos em decisões seguras.</h1>
+                    <span class="kicker" data-section-kicker>Seção contábil</span>
+                    <h1 data-section-title>Auditorias contábeis em um só lugar.</h1>
+                    <p class="section-description" data-section-description>Concilie estruturas e saldos entre os sistemas Betha e TCE.</p>
                 </div>
                 {% if entity %}<span class="entity-chip">{{ entity }}</span>{% endif %}
             </header>
@@ -46,28 +58,12 @@
             {% endif %}
 
             <section class="workbench" aria-labelledby="workspace-title">
-                <div class="section-heading">
-                    <div><span class="section-number">01</span><span class="kicker">Escolha a análise</span></div>
-                    <p>Selecione o fluxo e forneça os documentos solicitados.</p>
+                <div class="section-heading audit-heading">
+                    <div><span class="section-number">01</span><div><span class="kicker">Auditoria disponível</span><h2 data-audit-title>Conciliação Betha × TCE</h2></div></div>
+                    <p data-audit-description>Compare contas, saldos e correspondências entre duas fontes.</p>
                 </div>
 
                 <form id="upload-form" method="POST" enctype="multipart/form-data">
-                    <fieldset class="workflow-tabs">
-                        <legend class="visually-hidden">Tipo de conferência</legend>
-                        <label class="workflow-tab">
-                            <input type="radio" name="conferidor_type" value="contabil" {% if current_conferidor == 'contabil' %}checked{% endif %}>
-                            <span class="tab-index">01</span><span><strong>Contábil</strong><small>Betha × TCE</small></span>
-                        </label>
-                        <label class="workflow-tab">
-                            <input type="radio" name="conferidor_type" value="folha" {% if current_conferidor == 'folha' %}checked{% endif %}>
-                            <span class="tab-index">02</span><span><strong>Folha</strong><small>Eventos e valores</small></span>
-                        </label>
-                        <label class="workflow-tab">
-                            <input type="radio" name="conferidor_type" value="informe" {% if current_conferidor == 'informe' %}checked{% endif %}>
-                            <span class="tab-index">03</span><span><strong>Informe</strong><small>XML eSocial</small></span><b class="new-badge">Novo</b>
-                        </label>
-                    </fieldset>
-
                     <div class="form-body" data-csv-panel>
                         <div class="settings-grid" data-contabil-fields>
                             <label class="field-block" for="license-code"><span>Licença</span><input id="license-code" name="license_code" type="text" placeholder="Ex.: KYP12" autocomplete="off"></label>
@@ -111,7 +107,7 @@
             <section class="report-section" aria-labelledby="report-title">
                 <div class="section-heading result-heading"><div><span class="section-number">02</span><span class="kicker">Resultado consolidado</span></div><p>{{ income_report.source_count }} arquivo(s) processado(s)</p></div>
                 <article class="income-report">
-                    <header class="report-header"><div><span class="document-icon" aria-hidden="true">≡</span><div><span class="kicker">Dados consolidados</span><h2 id="report-title">Informe de rendimentos</h2></div></div><span class="verified-badge"><i></i> XML validado</span></header>
+                    <header class="report-header"><div><span class="document-icon" aria-hidden="true">≡</span><div><span class="kicker">Dados consolidados</span><h2 id="report-title">Informe de rendimentos</h2></div></div><div class="report-actions"><span class="verified-badge"><i></i> XML validado</span>{% if pdf_file %}<a href="{{ url_for('download', filename=pdf_file.split('/')[-1]) }}" class="pdf-action">Baixar resumo PDF</a>{% endif %}</div></header>
                     <div class="identity-grid">
                         <section><span class="identity-label">Trabalhador</span><strong>Beneficiário</strong><small>CPF · {{ income_report.worker_cpf_formatted }}</small></section>
                         <section><span class="identity-label">Empregador</span><strong>Empregador eSocial</strong><small>{{ income_report.employer_registration_formatted }}</small></section>
@@ -148,7 +144,7 @@
                 {% endif %}
 
                 {% if comparacao_html %}
-                <article class="result-card"><header class="result-card-header"><button type="button" class="collapse-trigger" data-collapse-target="#comparacao-resultados" aria-expanded="true"><span>{{ result_title|default('Resultado da comparação') }}</span><b>−</b></button><div class="download-group">{% if excel_file %}<a href="{{ url_for('download', filename=excel_file.split('/')[-1]) }}" class="secondary-action">XLSX</a>{% endif %}{% if highlighted_excel_file %}<a href="{{ url_for('download', filename=highlighted_excel_file.split('/')[-1]) }}" class="secondary-action">XLSX destacado</a>{% endif %}<a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="secondary-action">CSV</a></div></header><div id="comparacao-resultados" class="collapse-content"><div class="table-tools" data-table-tools><label class="table-search"><span>⌕</span><input type="search" placeholder="Filtrar linhas" data-table-search></label><button type="button" class="text-action" data-table-reset>Limpar filtro</button><span class="table-count" data-table-count></span></div><div class="table-responsive">{{ comparacao_html|safe }}</div></div></article>
+                <article class="result-card"><header class="result-card-header"><button type="button" class="collapse-trigger" data-collapse-target="#comparacao-resultados" aria-expanded="true"><span>{{ result_title|default('Resultado da comparação') }}</span><b>−</b></button><div class="download-group">{% if pdf_file %}<a href="{{ url_for('download', filename=pdf_file.split('/')[-1]) }}" class="pdf-action">Resumo PDF</a>{% endif %}{% if excel_file %}<a href="{{ url_for('download', filename=excel_file.split('/')[-1]) }}" class="secondary-action">XLSX</a>{% endif %}{% if highlighted_excel_file %}<a href="{{ url_for('download', filename=highlighted_excel_file.split('/')[-1]) }}" class="secondary-action">XLSX destacado</a>{% endif %}<a href="{{ url_for('download', filename=comparacao_file.split('/')[-1]) }}" class="secondary-action">CSV</a></div></header><div id="comparacao-resultados" class="collapse-content"><div class="table-tools" data-table-tools><label class="table-search"><span>⌕</span><input type="search" placeholder="Filtrar linhas" data-table-search></label><button type="button" class="text-action" data-table-reset>Limpar filtro</button><span class="table-count" data-table-count></span></div><div class="table-responsive">{{ comparacao_html|safe }}</div></div></article>
                 {% endif %}
             </section>
             {% endif %}
@@ -168,7 +164,7 @@
 
         const updateWorkflow = () => {
             const selected = document.querySelector('input[name="conferidor_type"]:checked').value;
-            const isInforme = selected === 'informe';
+            const isInforme = selected === 'esocial';
             const isContabil = selected === 'contabil';
             csvPanel.hidden = isInforme;
             xmlPanel.hidden = !isInforme;
@@ -179,16 +175,49 @@
             [...contabilFields.querySelectorAll('input, select')].forEach(input => { input.disabled = !isContabil; });
             licenseInput.required = isContabil;
             submitLabel.textContent = isInforme ? 'Consolidar informe' : 'Iniciar conferência';
+            const copy = {
+                contabil: { kicker: 'Seção contábil', title: 'Auditorias contábeis em um só lugar.', description: 'Concilie estruturas e saldos entre os sistemas Betha e TCE.', audit: 'Conciliação Betha × TCE', auditDescription: 'Compare contas, saldos e correspondências entre duas fontes.' },
+                folha: { kicker: 'Seção folha', title: 'Auditorias para uma folha consistente.', description: 'Confira eventos, rubricas e valores antes do fechamento.', audit: 'Conferência da folha', auditDescription: 'Compare os arquivos de folha Betha e TCE e identifique divergências.' },
+                esocial: { kicker: 'Seção eSocial', title: 'Eventos eSocial traduzidos em informação.', description: 'Transforme eventos fiscais em relatórios claros e verificáveis.', audit: 'Informe de rendimentos S-5002', auditDescription: 'Consolide competências, rendimentos, INSS, IRRF e décimo terceiro.' }
+            }[selected];
+            document.querySelector('[data-section-kicker]').textContent = copy.kicker;
+            document.querySelector('[data-section-title]').textContent = copy.title;
+            document.querySelector('[data-section-description]').textContent = copy.description;
+            document.querySelector('[data-audit-title]').textContent = copy.audit;
+            document.querySelector('[data-audit-description]').textContent = copy.auditDescription;
         };
         workflowInputs.forEach(input => input.addEventListener('change', updateWorkflow));
         updateWorkflow();
 
-        document.querySelectorAll('input[type="file"]').forEach(input => input.addEventListener('change', () => {
+        const updateFileLabel = input => {
             const label = input.closest('label').querySelector('.file-name');
             if (!input.files.length) label.textContent = label.dataset.default;
             else if (input.files.length === 1) label.textContent = input.files[0].name;
             else label.textContent = `${input.files.length} arquivos selecionados`;
-        }));
+        };
+        document.querySelectorAll('input[type="file"]').forEach(input => input.addEventListener('change', () => updateFileLabel(input)));
+
+        document.querySelectorAll('.upload-card, .xml-dropzone').forEach(dropzone => {
+            const input = dropzone.querySelector('input[type="file"]');
+            ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!input.disabled) dropzone.classList.add('is-dragging');
+            }));
+            ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => {
+                event.preventDefault();
+                event.stopPropagation();
+                dropzone.classList.remove('is-dragging');
+            }));
+            dropzone.addEventListener('drop', event => {
+                if (input.disabled || !event.dataTransfer?.files.length) return;
+                const transfer = new DataTransfer();
+                const files = input.multiple ? [...event.dataTransfer.files] : [event.dataTransfer.files[0]];
+                files.forEach(file => transfer.items.add(file));
+                input.files = transfer.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
 
         document.getElementById('upload-form').addEventListener('submit', () => {
             document.getElementById('processing').hidden = false;

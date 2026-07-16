@@ -7,6 +7,8 @@ Informe/
 
 # Ignorar arquivos gerados automaticamente
 data/*.csv
+data/*.pdf
+tmp/pdfs/
 
 # Ignorar ambiente virtual Python
 venv/
